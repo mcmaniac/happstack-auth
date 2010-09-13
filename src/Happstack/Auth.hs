@@ -1,52 +1,32 @@
-{-# OPTIONS -fglasgow-exts #-}
-{-# LANGUAGE NoMonomorphismRestriction,
-             TemplateHaskell , FlexibleInstances,
-             UndecidableInstances, OverlappingInstances,
-             MultiParamTypeClasses, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TemplateHaskell, TypeSynonymInstances, MultiParamTypeClasses,
+             FlexibleContexts, FlexibleInstances, DeriveDataTypeable
+             #-}
+{-# OPTIONS -fno-warn-unused-do-bind -fno-warn-name-shadowing -fno-warn-missing-signatures #-}
 
 module Happstack.Auth where
 
-import Char
-import Maybe
+import Control.Monad.Reader
+import Control.Monad.State (modify,get,gets)
+import Data.Char
+import Data.Maybe
 import Numeric
-import Random
+import System.Random
 
 import qualified Data.Map as M
-import Control.Monad.Reader
-import Control.Monad.State (modify,put,get,gets)
-import Control.Monad.Trans
+
 import Codec.Utils
 import Data.ByteString.Internal
 import Data.Digest.SHA512
-import Data.Generics hiding ((:+:))
-import Data.Word
-import Happstack.Data
 import Happstack.Data.IxSet
 import Happstack.Server
 import Happstack.State
 
+import Happstack.Auth.Data
+
+queryPolicy :: BodyPolicy
+queryPolicy = defaultBodyPolicy "" 0 0 0
+
 sessionCookie = "sid"
-
-newtype SessionKey = SessionKey Integer deriving (Read,Show,Ord,Eq,Typeable,Data,Num,Random)
-instance Version SessionKey
-$(deriveSerialize ''SessionKey)
-
-newtype UserId = UserId { unUid :: Word64 } deriving (Read,Show,Ord,Eq,Typeable,Data,Num)
-instance Version UserId
-$(deriveSerialize ''UserId)
-
-newtype Username = Username { unUser :: String } deriving (Read,Show,Ord,Eq,Typeable,Data)
-instance Version Username
-$(deriveSerialize ''Username)
-
-data SessionData = SessionData {
-  sesUid :: UserId,
-  sesUsername :: Username
-} deriving (Read,Show,Eq,Typeable,Data)
-
-newtype SaltedHash = SaltedHash [Octet] deriving (Read,Show,Ord,Eq,Typeable,Data)
-instance Version SaltedHash
-$(deriveSerialize ''SaltedHash)
 
 saltLength = 16
 strToOctets = listToOctets . (map c2w)
@@ -64,38 +44,6 @@ buildSaltAndHash str = do
 checkSalt :: String -> SaltedHash -> Bool
 checkSalt str (SaltedHash h) = h == salt++(slowHash $ salt++(strToOctets str))
   where salt = take saltLength h
-  
-data Sessions a = Sessions {unsession::M.Map SessionKey a}
-  deriving (Read,Show,Eq,Typeable,Data)
-
-data User = User {
-  userid :: UserId,
-  username :: Username,
-  userpass :: SaltedHash
-} deriving (Read,Show,Ord,Eq,Typeable,Data)
-
-$(inferIxSet "UserDB" ''User 'noCalcs [''UserId, ''Username])
-
-data AuthState = AuthState {
-  sessions :: Sessions SessionData,
-  users :: UserDB,
-  nextUid :: UserId
-} deriving (Show,Read,Typeable,Data)
-instance Version SessionData
-instance Version (Sessions a)
-
-$(deriveSerialize ''SessionData)
-$(deriveSerialize ''Sessions)
-
-instance Version AuthState
-instance Version User
-
-$(deriveSerialize ''User)
-$(deriveSerialize ''AuthState)
-
-instance Component AuthState where
-  type Dependencies AuthState = End
-  initialValue = AuthState (Sessions M.empty) empty 0
 
 askUsers :: Query AuthState UserDB
 askUsers = return . users =<< ask
@@ -214,7 +162,7 @@ performLogin user = do
  - Handles data from a login form to log the user in.  The form must supply
  - fields named "username" and "password".
  -}
-loginHandler successResponse failResponse = withData handler
+loginHandler successResponse failResponse = withData queryPolicy handler
   where handler (UserAuthInfo user pass) = do
           mu <- query $ AuthUser user pass
           case mu of
@@ -263,15 +211,13 @@ newUserHandler existsOrInvalid nomatch succ = newUserHandler' existsOrInvalid no
  - the success part. This can be used to initiate any data associated
  - with a user.
  -}
-newUserHandler' existsOrInvalid nomatch succ = withData handler
+newUserHandler' existsOrInvalid nomatch succ = withData queryPolicy handler
   where handler (NewUserInfo user pass1 pass2)
           | not (saneUsername user) = existsOrInvalid
           | pass1 /= pass2 = nomatch
           | otherwise = checkAndAdd existsOrInvalid (succ (Username user)) (Username user) pass1
         saneUsername str = foldl1 (&&) $ map isAlphaNum str
 
-queryPolicy :: BodyPolicy
-queryPolicy = defaultBodyPolicy "" 0 0 0
 
 {-
  - Handles data from a new user registration form.  The form must supply
@@ -298,12 +244,20 @@ changePassword user oldpass newpass = do
  - Requiring a login
  -}
 
+clearSessionCookie :: (FilterMonad Response m)
+                   => m ()
 clearSessionCookie = addCookie 0 (mkCookie sessionCookie "0")
 
+getSessionId :: (Read a) => RqData (Maybe a)
 getSessionId = liftM Just (readCookieValue sessionCookie) `mplus` return Nothing
 
-withSessionId = withDataFn getSessionId
+withSessionId :: (Read a, MonadIO m, MonadPlus m, ServerMonad m)
+              => (Maybe a -> m r)
+              -> m r
+withSessionId = withDataFn queryPolicy getSessionId
 
+getLoggedInUser :: (MonadIO m, MonadPlus m, ServerMonad m)
+                => m (Maybe SessionData)
 getLoggedInUser = withSessionId action
   where action (Just sid) = query $ GetSession sid
         action Nothing    = return Nothing
