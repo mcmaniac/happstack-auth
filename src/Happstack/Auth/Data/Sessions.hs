@@ -11,7 +11,7 @@ import qualified Data.Map as M
 
 import Happstack.Auth.Data.SessionKey
 
-data Sessions a = Sessions { unsession::M.Map SessionKey a }
+data Sessions a = Sessions { unsession :: M.Map SessionKey a }
   deriving (Read,Show,Eq,Typeable,Data)
 
 $(deriveSerialize ''Sessions)

@@ -1,5 +1,6 @@
 {-# LANGUAGE TemplateHaskell, TypeSynonymInstances, MultiParamTypeClasses,
-             FlexibleContexts, FlexibleInstances, DeriveDataTypeable
+             FlexibleContexts, FlexibleInstances, DeriveDataTypeable,
+             TupleSections
              #-}
 {-# OPTIONS -fno-warn-orphans #-}
 
@@ -8,16 +9,17 @@ module Happstack.Auth
       -- * High level functions
 
       -- ** User registration
-    , register
+      register
     , changePassword
 
       -- ** Session management
-      performLogin
+    , performLogin
     , performLogout
     , loginHandler
     , logoutHandler
     , clearSessionCookie
-    , getLoggedInUser
+    , getSessionData
+    , getSessionKey
     , withSession
     , loginGate
 
@@ -418,23 +420,26 @@ logoutHandler target = withSessionId handler
 clearSessionCookie :: (FilterMonad Response m) => m ()
 clearSessionCookie = addCookie 0 (mkCookie sessionCookie "0")
 
-getSessionId :: (Read a) => RqData (Maybe a)
-getSessionId = optional $ readCookieValue sessionCookie
-
 -- | Get the `SessionData' of the currently logged in user
-getLoggedInUser :: (MonadIO m, MonadPlus m, ServerMonad m)
-                => m (Maybe SessionData)
-getLoggedInUser = withSessionId action
+getSessionData :: (MonadIO m, MonadPlus m, ServerMonad m)
+               => m (Maybe SessionData)
+getSessionData = withSessionId action
   where
     action (Just sid) = getSession sid
     action Nothing    = return Nothing
 
+-- | Get the identifier for the current session
+getSessionKey :: (MonadIO m, MonadPlus m, ServerMonad m)
+              => m (Maybe SessionKey)
+getSessionKey = withSessionId return
 
--- Not sure what we need this for?
 withSessionId :: (Read a, MonadIO m, MonadPlus m, ServerMonad m)
               => (Maybe a -> m r)
               -> m r
 withSessionId = withDataFn queryPolicy getSessionId
+  where
+    getSessionId :: (Read a) => RqData (Maybe a)
+    getSessionId = optional $ readCookieValue sessionCookie
 
 
 -- | Run a `ServerPartT' with the `SessionData' of the currently logged in user
