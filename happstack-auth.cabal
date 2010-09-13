@@ -32,14 +32,14 @@ Library
 
     Exposed-Modules:
         Happstack.Auth
-        Happstack.Auth.Data
+        Happstack.Auth.Data.Internal
 
     Other-Modules:
-        Happstack.Auth.Data.AuthState
-        Happstack.Auth.Data.SaltedHash
-        Happstack.Auth.Data.SessionData
-        Happstack.Auth.Data.SessionKey
-        Happstack.Auth.Data.Sessions
-        Happstack.Auth.Data.User
-        Happstack.Auth.Data.UserId
-        Happstack.Auth.Data.Username
+        Happstack.Auth.Data.Internal.AuthState
+        Happstack.Auth.Data.Internal.SaltedHash
+        Happstack.Auth.Data.Internal.SessionData
+        Happstack.Auth.Data.Internal.SessionKey
+        Happstack.Auth.Data.Internal.Sessions
+        Happstack.Auth.Data.Internal.User
+        Happstack.Auth.Data.Internal.UserId
+        Happstack.Auth.Data.Internal.Username

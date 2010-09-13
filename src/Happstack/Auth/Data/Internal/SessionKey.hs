@@ -2,7 +2,7 @@
              TypeFamilies
              #-}
 
-module Happstack.Auth.Data.SessionKey where
+module Happstack.Auth.Data.Internal.SessionKey where
 
 import Data.Data
 import System.Random

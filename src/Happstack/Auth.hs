@@ -75,8 +75,8 @@ import Happstack.Data.IxSet
 import Happstack.Server
 import Happstack.State
 
-import Happstack.Auth.Data hiding (Username, User, SessionData)
-import qualified Happstack.Auth.Data as D
+import Happstack.Auth.Data.Internal hiding (Username, User, SessionData)
+import qualified Happstack.Auth.Data.Internal as D
 
 
 queryPolicy :: BodyPolicy

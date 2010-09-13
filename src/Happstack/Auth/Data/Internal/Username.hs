@@ -2,15 +2,14 @@
              TypeFamilies
              #-}
 
-module Happstack.Auth.Data.SaltedHash where
+module Happstack.Auth.Data.Internal.Username where
 
 import Data.Data
 import Happstack.Data
-import Codec.Utils
 
-newtype SaltedHash = SaltedHash [Octet]
+newtype Username = Username { unUser :: String }
   deriving (Read,Show,Ord,Eq,Typeable,Data)
 
-$(deriveSerialize ''SaltedHash)
+$(deriveSerialize ''Username)
 
-instance Version SaltedHash
+instance Version Username
