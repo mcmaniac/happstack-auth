@@ -244,11 +244,11 @@ $(mkMethods ''AuthState
 {- $datatypes
 
 These data types collide with the data definitions used internaly in
-"Happstack.Auth.Data". However, if you need both modules you might want to
-import the Data module qualified:
+"Happstack.Auth.Data.Internal". However, if you need both modules you might
+want to import the Data module qualified:
 
 > import Happstack.Auth
-> import qualified Happstack.Auth.Data as AuthD
+> import qualified Happstack.Auth.Data.Internal as AuthD
 
 -}
 
@@ -335,7 +335,8 @@ numUsers = query SNumUsers
 updateUser :: (MonadIO m) => User -> m ()
 updateUser u = update $ SUpdateUser (toDUser u)
 
--- | Warning: This `UserDB' uses the internal types from "Happstack.Auth.Data"
+-- | Warning: This `UserDB' uses the internal types from
+-- "Happstack.Auth.Data.Internal"
 askUsers :: (MonadIO m) => m UserDB
 askUsers = query SAskUsers
 
@@ -362,7 +363,7 @@ numSessions :: (MonadIO m) => m Int
 numSessions = query $ SNumSessions
 
 -- | Warning: This `Sessions' uses the internal types from
--- "Happstack.Auth.Data"
+-- "Happstack.Auth.Data.Internal"
 getSessions :: (MonadIO m) => m (Sessions D.SessionData)
 getSessions = query SGetSessions
 
