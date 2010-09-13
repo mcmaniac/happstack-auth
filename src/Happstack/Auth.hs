@@ -270,6 +270,8 @@ newUserHandler' existsOrInvalid nomatch succ = withData handler
           | otherwise = checkAndAdd existsOrInvalid (succ (Username user)) (Username user) pass1
         saneUsername str = foldl1 (&&) $ map isAlphaNum str
 
+queryPolicy :: BodyPolicy
+queryPolicy = defaultBodyPolicy "" 0 0 0
 
 {-
  - Handles data from a new user registration form.  The form must supply
