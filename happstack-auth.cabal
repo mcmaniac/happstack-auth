@@ -1,26 +1,45 @@
 Name:                happstack-auth
-Version:             0.1
+Version:             0.2
 License:             BSD3
-Author:              Mighty Byte
-Maintainer:          Mighty Byte
+Author:              Nils Schweinsberg
+Maintainer:          mail@n-sch.de
 
 Synopsis:            Happstack authentication suite
 Description:         Happstack module
 Category:            Web
 
-homepage:            http://github.com/mightybyte/happstack-auth/tree/master
+Homepage:            http://github.com/mcmaniac/happstack-auth
 Build-Type:          Simple
+Cabal-Version:       >= 1.6
 
-hs-source-dirs:      src
-Exposed-modules:     Happstack.Auth
+Library
 
-Build-Depends:       haskell98, base, bytestring, mtl, containers, happstack, happstack-state, happstack-server,
-                     happstack-ixset, happstack-data, Crypto >= 4.2.0
+    HS-Source-Dirs:      src
 
+    Build-Depends:
+        base                == 4.*,
+        bytestring          == 0.*,
+        mtl                 == 1.*,
+        containers          == 0.*,
+        random              == 1.*,
+        happstack           == 0.5.*,
+        happstack-state     == 0.5.*,
+        happstack-server    == 0.5.*,
+        happstack-ixset     == 0.5.*,
+        happstack-data      == 0.5.*,
+        Crypto              == 4.*,
+        convertible         == 1.*
 
-Extensions:          TemplateHaskell, DeriveDataTypeable, MultiParamTypeClasses,
-                     TypeFamilies, FlexibleContexts, OverlappingInstances,
-                     FlexibleInstances, UndecidableInstances, ScopedTypeVariables,
-                     TypeSynonymInstances, PatternGuards
-                     CPP, ForeignFunctionInterface
+    Exposed-Modules:
+        Happstack.Auth
+        Happstack.Auth.Data
 
+    Other-Modules:
+        Happstack.Auth.Data.AuthState
+        Happstack.Auth.Data.SaltedHash
+        Happstack.Auth.Data.SessionData
+        Happstack.Auth.Data.SessionKey
+        Happstack.Auth.Data.Sessions
+        Happstack.Auth.Data.User
+        Happstack.Auth.Data.UserId
+        Happstack.Auth.Data.Username

@@ -5,7 +5,7 @@
 module Happstack.Auth.Data.SessionKey where
 
 import Data.Data
-import Random
+import System.Random
 import Happstack.Data
 
 newtype SessionKey = SessionKey Integer
