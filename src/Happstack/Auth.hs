@@ -62,7 +62,6 @@ import Control.Applicative
 import Control.Monad.Reader
 import Control.Monad.State (modify,get,gets)
 import Data.Maybe
-import Data.Word
 import Numeric
 import System.Random
 
@@ -76,7 +75,7 @@ import Happstack.Data.IxSet
 import Happstack.Server
 import Happstack.State
 
-import Happstack.Auth.Data hiding (Username, UserId, User, SessionData)
+import Happstack.Auth.Data hiding (Username, User, SessionData)
 import qualified Happstack.Auth.Data as D
 
 
@@ -258,7 +257,6 @@ import the Data module qualified:
 --
 type Username = String
 type Password = String
-type UserId   = Word64
 
 data User = User
     { userId        :: UserId
@@ -267,13 +265,13 @@ data User = User
     }
 
 fromDUser :: D.User -> User
-fromDUser (D.User (D.UserId i) (D.Username n) p) = User i n p
+fromDUser (D.User i (D.Username n) p) = User i n p
 
 instance Convertible D.User User where
     safeConvert = Right . fromDUser
 
 toDUser :: User -> D.User
-toDUser (User i n p) = D.User (D.UserId i) (D.Username n) p
+toDUser (User i n p) = D.User i (D.Username n) p
 
 instance Convertible User D.User where
     safeConvert = Right . toDUser
@@ -292,13 +290,13 @@ data SessionData = SessionData
     }
 
 fromDSession :: D.SessionData -> SessionData
-fromDSession (D.SessionData (D.UserId i) (D.Username n)) = SessionData i n
+fromDSession (D.SessionData i (D.Username n)) = SessionData i n
 
 instance Convertible D.SessionData SessionData where
     safeConvert = Right . fromDSession
 
 toDSession :: SessionData -> D.SessionData
-toDSession (SessionData i n) = D.SessionData (D.UserId i) (D.Username n)
+toDSession (SessionData i n) = D.SessionData i (D.Username n)
 
 instance Convertible SessionData D.SessionData where
     safeConvert = Right . toDSession
@@ -316,7 +314,7 @@ getUser :: (MonadIO m) => Username -> m (Maybe User)
 getUser u = maybeUser . query $ SGetUser (D.Username u)
 
 getUserById :: (MonadIO m) => UserId -> m (Maybe User)
-getUserById i = maybeUser . query $ SGetUserById (D.UserId i)
+getUserById i = maybeUser . query $ SGetUserById i
 
 delUser :: (MonadIO m) => Username -> m ()
 delUser u = update $ SDelUser (D.Username u)

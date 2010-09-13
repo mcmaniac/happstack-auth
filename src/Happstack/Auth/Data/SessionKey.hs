@@ -8,6 +8,7 @@ import Data.Data
 import System.Random
 import Happstack.Data
 
+-- | Abstract session identification
 newtype SessionKey = SessionKey Integer
   deriving (Read,Show,Ord,Eq,Typeable,Data,Num,Random)
 
