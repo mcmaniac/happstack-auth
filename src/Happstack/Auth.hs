@@ -7,6 +7,10 @@ module Happstack.Auth
     (
       -- * High level functions
 
+      -- ** User registration
+    , register
+    , changePassword
+
       -- ** Session management
       performLogin
     , performLogout
@@ -16,10 +20,6 @@ module Happstack.Auth
     , getLoggedInUser
     , withSession
     , loginGate
-
-      -- ** User registration
-    , register
-    , changePassword
 
       -- * Basic functions
 
