@@ -5,7 +5,7 @@ Author:              Nils Schweinsberg
 Maintainer:          mail@n-sch.de
 
 Synopsis:            Happstack authentication suite
-Description:         Happstack module
+Description:         Happstack module, based on Happstack-State
 Category:            Web
 
 Homepage:            http://github.com/mcmaniac/happstack-auth
@@ -14,7 +14,8 @@ Cabal-Version:       >= 1.6
 
 Library
 
-    HS-Source-Dirs:      src
+    HS-Source-Dirs:         src
+    GHC-Options:            -Wall
 
     Build-Depends:
         base                == 4.*,
@@ -22,11 +23,11 @@ Library
         mtl                 == 1.*,
         containers          == 0.*,
         random              == 1.*,
-        happstack           == 0.5.*,
-        happstack-state     == 0.5.*,
-        happstack-server    == 0.5.*,
-        happstack-ixset     == 0.5.*,
-        happstack-data      == 0.5.*,
+        happstack           >= 0.5.1,
+        happstack-state     >= 0.5.1,
+        happstack-server    >= 0.5.1,
+        happstack-ixset     >= 0.5.1,
+        happstack-data      >= 0.5.1,
         Crypto              == 4.*,
         convertible         == 1.*
 
