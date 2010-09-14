@@ -156,7 +156,9 @@ authProxy = Proxy
 addUser :: (MonadIO m) => Username -> Password -> m (Maybe User)
 addUser u p = do
     s <- liftIO $ buildSaltAndHash p
-    maybeUser . update $ AddUser (D.Username u) s
+    case s of
+         Just s' -> maybeUser . update $ AddUser (D.Username u) s'
+         Nothing -> return Nothing
 
 getUser :: (MonadIO m) => Username -> m (Maybe User)
 getUser u = maybeUser . query $ GetUser (D.Username u)
@@ -336,8 +338,9 @@ changePassword :: (MonadIO m)
                -> m Bool
 changePassword user oldpass newpass = do
     mu <- authUser user oldpass
-    case mu of
-         (Just u) -> do h <- liftIO $ buildSaltAndHash newpass
-                        updateUser u { userPass = h }
-                        return True
-         Nothing  -> return False
+    h <- liftIO $ buildSaltAndHash newpass
+    case (mu, h) of
+         ((Just u), Just h') -> do
+             updateUser u { userPass = h' }
+             return True
+         _ -> return False

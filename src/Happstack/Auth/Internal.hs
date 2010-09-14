@@ -38,7 +38,7 @@ import qualified Data.Map as M
 import Codec.Utils
 import Data.ByteString.Internal
 import Data.Digest.SHA512
-import Happstack.Data.IxSet
+import Happstack.Data.IxSet hiding (null)
 import Happstack.State
 
 import Happstack.Auth.Internal.Data hiding (Username, User, SessionData)
@@ -61,13 +61,15 @@ randomSalt :: IO String
 randomSalt = liftM concat $ sequence $ take saltLength $ repeat $
   randomRIO (0::Int,15) >>= return . flip showHex ""
 
-buildSaltAndHash :: String -> IO SaltedHash
-buildSaltAndHash str = do
-  salt <- randomSalt
-  let salt' = strToOctets salt
-  let str' = strToOctets str
-  let h = slowHash (salt'++str')
-  return $ SaltedHash $ salt'++h
+buildSaltAndHash :: String -> IO (Maybe SaltedHash)
+buildSaltAndHash str
+    | null str = return Nothing
+    | otherwise = do
+        salt <- randomSalt
+        let salt' = strToOctets salt
+            str' = strToOctets str
+            h = slowHash (salt'++str')
+        return . Just $ SaltedHash $ salt'++h
 
 checkSalt :: String -> SaltedHash -> Bool
 checkSalt str (SaltedHash h) = h == salt++(slowHash $ salt++(strToOctets str))
@@ -111,14 +113,16 @@ isUser name = do
   return $ isJust $ getOne $ us @= name
 
 addUser :: D.Username -> SaltedHash -> Update AuthState (Maybe D.User)
-addUser name pass = do
-  s <- get
-  let exists = isJust $ getOne $ (users s) @= name
-  if exists
-    then return Nothing
-    else do u <- newUser name pass
-            modUsers $ insert u
-            return $ Just u
+addUser name pass
+    | null (unUser name) = return Nothing
+    | otherwise = do
+        s <- get
+        let exists = isJust $ getOne $ (users s) @= name
+        if exists
+           then return Nothing
+           else do u <- newUser name pass
+                   modUsers $ insert u
+                   return $ Just u
   where newUser u p = do uid <- getAndIncUid
                          return $ D.User uid u p
 
