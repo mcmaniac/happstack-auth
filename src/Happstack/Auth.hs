@@ -219,12 +219,15 @@ getSessions = query GetSessions
 --------------------------------------------------------------------------------
 -- Session managment
 
-performLogin :: (MonadIO m, FilterMonad Response m)
+performLogin :: (MonadIO m, FilterMonad Response m, ServerMonad m)
              => User
-             -> m ()
-performLogin user = do
+             -> m a         -- ^ Run with modified headers, including the new session cookie
+             -> m a
+performLogin user action = do
   key <- newSession $ SessionData (userId user) (userName user)
+  let cookie = mkCookie sessionCookie (show key)
   addCookie (2678400) $ mkCookie sessionCookie (show key)
+  localRq (\r -> r { rqCookies = (rqCookies r) ++ [(sessionCookie, cookie)] }) action
 
 -- | Handles data from a login form to log the user in.
 loginHandler :: (MonadIO m, FilterMonad Response m, MonadPlus m, ServerMonad m)
@@ -242,7 +245,7 @@ loginHandler muname mpwd okR failR = do
     case dat of
          Right (u, Just p) -> authUser u p
                           >>= maybe (failR (Just u) (Just p))
-                                    (\user -> performLogin user >> okR)
+                                    (\user -> performLogin user okR)
          Right (u, mp)     -> failR (Just u) mp
          _                 -> failR Nothing Nothing
 
@@ -314,7 +317,7 @@ loginGate reg guest = withSession (\_ -> reg) guest
 -- User registration
 
 -- | Register a new user
-register :: (MonadIO m, FilterMonad Response m)
+register :: (MonadIO m, FilterMonad Response m, ServerMonad m)
          => m a          -- ^ User exists response
          -> m a          -- ^ Success response
          -> Username
@@ -323,7 +326,7 @@ register :: (MonadIO m, FilterMonad Response m)
 register uExists good user pass = do
     u <- addUser user pass
     case u of
-         Just u' -> performLogin u' >> good
+         Just u' -> performLogin u' good
          Nothing -> uExists
 
 changePassword :: (MonadIO m)
