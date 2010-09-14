@@ -33,7 +33,7 @@ demoRegister = withSession (demoResponse . loggedInTemplate) $ do
                                              <*> look "password"
     case dat of
          Right (un,pw) -> do
-             register (demoResponse $ existsTemplate un)
+             register (demoResponse $ invalidUsernameTemplate un)
                       demoHome
                       un pw
          _ -> demoResponse registerTemplate

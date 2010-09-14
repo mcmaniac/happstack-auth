@@ -98,11 +98,10 @@ regForm un = do
 
         input ! type_ "submit"
 
-
-existsTemplate :: Username -> Html
-existsTemplate un = do
+invalidUsernameTemplate :: Username -> Html
+invalidUsernameTemplate un = do
     h1 ! class_ "label-green" $ "Register a new user"
-    h2 ! class_ "label-red"   $ string $ "Error: User " ++ un ++ " already exists."
+    h2 ! class_ "label-red"   $ string $ "Error: Invalid username/password"
     regForm $ Just un
 
 registerTemplate :: Html
