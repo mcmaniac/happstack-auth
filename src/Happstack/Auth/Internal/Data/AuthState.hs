@@ -16,6 +16,7 @@ import Happstack.Auth.Internal.Data.Sessions
 import Happstack.Auth.Internal.Data.User
 import Happstack.Auth.Internal.Data.UserId
 
+-- | Add this to your Dependency-List of your application state
 data AuthState = AuthState
     { sessions      :: Sessions SessionData
     , users         :: UserDB

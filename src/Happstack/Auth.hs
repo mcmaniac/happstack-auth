@@ -53,6 +53,8 @@ module Happstack.Auth
     , UserId
     , SessionData (..)
     , SessionKey
+    , AuthState
+    , authProxy
     ) where
 
 
@@ -70,7 +72,7 @@ import qualified Happstack.Auth.Internal.Data as D
 
 
 queryPolicy :: BodyPolicy
-queryPolicy = defaultBodyPolicy "" 0 0 0
+queryPolicy = defaultBodyPolicy "/tmp/happstack-auth" 0 4096 4096
 
 sessionCookie :: String
 sessionCookie = "sid"
@@ -138,6 +140,14 @@ toDSession (SessionData i n) = D.SessionData i (D.Username n)
 
 instance Convertible SessionData D.SessionData where
     safeConvert = Right . toDSession
+
+
+--
+-- Auth Proxy
+--
+
+authProxy :: Proxy AuthState
+authProxy = Proxy
 
 
 --------------------------------------------------------------------------------
