@@ -2,13 +2,13 @@
              TypeFamilies
              #-}
 
-module Happstack.Auth.Data.Internal.SessionData where
+module Happstack.Auth.Internal.Data.SessionData where
 
 import Data.Data
 import Happstack.Data
 
-import Happstack.Auth.Data.Internal.UserId
-import Happstack.Auth.Data.Internal.Username
+import Happstack.Auth.Internal.Data.UserId
+import Happstack.Auth.Internal.Data.Username
 
 data SessionData = SessionData
     { sesUid        :: UserId

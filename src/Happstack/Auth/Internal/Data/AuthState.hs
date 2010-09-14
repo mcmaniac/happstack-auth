@@ -2,7 +2,7 @@
              TypeFamilies
              #-}
 
-module Happstack.Auth.Data.Internal.AuthState where
+module Happstack.Auth.Internal.Data.AuthState where
 
 import Data.Data
 import Happstack.Data
@@ -11,10 +11,10 @@ import Happstack.State
 
 import qualified Data.Map as M
 
-import Happstack.Auth.Data.Internal.SessionData
-import Happstack.Auth.Data.Internal.Sessions
-import Happstack.Auth.Data.Internal.User
-import Happstack.Auth.Data.Internal.UserId
+import Happstack.Auth.Internal.Data.SessionData
+import Happstack.Auth.Internal.Data.Sessions
+import Happstack.Auth.Internal.Data.User
+import Happstack.Auth.Internal.Data.UserId
 
 data AuthState = AuthState
     { sessions      :: Sessions SessionData

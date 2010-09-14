@@ -2,7 +2,7 @@
              TypeFamilies
              #-}
 
-module Happstack.Auth.Data.Internal.SaltedHash where
+module Happstack.Auth.Internal.Data.SaltedHash where
 
 import Data.Data
 import Happstack.Data

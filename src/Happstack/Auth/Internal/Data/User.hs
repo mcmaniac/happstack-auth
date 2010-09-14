@@ -3,15 +3,15 @@
              #-}
 
 
-module Happstack.Auth.Data.Internal.User where
+module Happstack.Auth.Internal.Data.User where
 
 import Data.Data
 import Happstack.Data
 import Happstack.Data.IxSet
 
-import Happstack.Auth.Data.Internal.SaltedHash
-import Happstack.Auth.Data.Internal.UserId
-import Happstack.Auth.Data.Internal.Username
+import Happstack.Auth.Internal.Data.SaltedHash
+import Happstack.Auth.Internal.Data.UserId
+import Happstack.Auth.Internal.Data.Username
 
 data User = User
     { userid        :: UserId

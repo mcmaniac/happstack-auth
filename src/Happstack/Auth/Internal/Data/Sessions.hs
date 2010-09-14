@@ -2,14 +2,14 @@
              TypeFamilies
              #-}
 
-module Happstack.Auth.Data.Internal.Sessions where
+module Happstack.Auth.Internal.Data.Sessions where
 
 import Data.Data
 import Happstack.Data
 
 import qualified Data.Map as M
 
-import Happstack.Auth.Data.Internal.SessionKey
+import Happstack.Auth.Internal.Data.SessionKey
 
 data Sessions a = Sessions { unsession :: M.Map SessionKey a }
   deriving (Read,Show,Eq,Typeable,Data)

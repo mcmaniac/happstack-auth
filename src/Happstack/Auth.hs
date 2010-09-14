@@ -1,8 +1,6 @@
 {-# LANGUAGE TemplateHaskell, TypeSynonymInstances, MultiParamTypeClasses,
-             FlexibleContexts, FlexibleInstances, DeriveDataTypeable,
-             TupleSections
+             FlexibleContexts, FlexibleInstances, TupleSections
              #-}
-{-# OPTIONS -fno-warn-orphans #-}
 
 module Happstack.Auth
     (
@@ -60,23 +58,15 @@ module Happstack.Auth
 
 import Control.Applicative
 import Control.Monad.Reader
-import Control.Monad.State (modify,get,gets)
 import Data.Maybe
-import Numeric
-import System.Random
-
-import qualified Data.Map as M
 
 import Data.Convertible
-import Codec.Utils
-import Data.ByteString.Internal
-import Data.Digest.SHA512
-import Happstack.Data.IxSet
 import Happstack.Server
 import Happstack.State
 
-import Happstack.Auth.Data.Internal hiding (Username, User, SessionData)
-import qualified Happstack.Auth.Data.Internal as D
+import Happstack.Auth.Internal
+import Happstack.Auth.Internal.Data hiding (Username, User, SessionData)
+import qualified Happstack.Auth.Internal.Data as D
 
 
 queryPolicy :: BodyPolicy
@@ -84,158 +74,6 @@ queryPolicy = defaultBodyPolicy "" 0 0 0
 
 sessionCookie :: String
 sessionCookie = "sid"
-
-
---------------------------------------------------------------------------------
--- Password generation
-
-saltLength :: Num t => t
-saltLength = 16
-
-strToOctets :: String -> [Octet]
-strToOctets = listToOctets . (map c2w)
-
-slowHash :: [Octet] -> [Octet]
-slowHash a = (iterate hash a) !! 512
-
-randomSalt :: IO String
-randomSalt = liftM concat $ sequence $ take saltLength $ repeat $
-  randomRIO (0::Int,15) >>= return . flip showHex ""
-
-buildSaltAndHash :: String -> IO SaltedHash
-buildSaltAndHash str = do
-  salt <- randomSalt
-  let salt' = strToOctets salt
-  let str' = strToOctets str
-  let h = slowHash (salt'++str')
-  return $ SaltedHash $ salt'++h
-
-checkSalt :: String -> SaltedHash -> Bool
-checkSalt str (SaltedHash h) = h == salt++(slowHash $ salt++(strToOctets str))
-  where salt = take saltLength h
-
-
---------------------------------------------------------------------------------
--- State functions: Users
-
-sAskUsers :: Query AuthState UserDB
-sAskUsers = return . users =<< ask
-
-sAskSessions :: Query AuthState (Sessions D.SessionData)
-sAskSessions = return . sessions =<< ask
-
-sGetUser :: D.Username -> Query AuthState (Maybe D.User)
-sGetUser un = do
-  udb <- sAskUsers
-  return $ getOne $ udb @= un
-
-sGetUserById :: D.UserId -> Query AuthState (Maybe D.User)
-sGetUserById uid = do
-  udb <- sAskUsers
-  return $ getOne $ udb @= uid
-
-sModUsers :: (UserDB -> UserDB) -> Update AuthState ()
-sModUsers f = modify (\s -> (AuthState (sessions s) (f $ users s) (nextUid s)))
-
-sModSessions :: (Sessions D.SessionData -> Sessions D.SessionData) -> Update AuthState ()
-sModSessions f = modify (\s -> (AuthState (f $ sessions s) (users s) (nextUid s)))
-
-sGetAndIncUid :: Update AuthState D.UserId
-sGetAndIncUid = do
-  uid <- gets nextUid
-  modify (\s -> (AuthState (sessions s) (users s) (uid+1)))
-  return uid
-
-sIsUser :: D.Username -> Query AuthState Bool
-sIsUser name = do
-  us <- sAskUsers
-  return $ isJust $ getOne $ us @= name
-
-sAddUser :: D.Username -> SaltedHash -> Update AuthState (Maybe D.User)
-sAddUser name pass = do
-  s <- get
-  let exists = isJust $ getOne $ (users s) @= name
-  if exists
-    then return Nothing
-    else do u <- newUser name pass
-            sModUsers $ insert u
-            return $ Just u
-  where newUser u p = do uid <- sGetAndIncUid
-                         return $ D.User uid u p
-
-sDelUser :: D.Username -> Update AuthState ()
-sDelUser name = sModUsers del
-  where del db = case getOne (db @= name) of
-                   Just u -> delete u db
-                   Nothing -> db
-
-sUpdateUser :: D.User -> Update AuthState ()
-sUpdateUser u = sModUsers (updateIx (userid u) u)
-
-sAuthUser :: String -> String -> Query AuthState (Maybe D.User)
-sAuthUser name pass = do
-  udb <- sAskUsers
-  let u = getOne $ udb @= (D.Username name)
-  case u of
-    (Just v) -> return $ if checkSalt pass (userpass v) then u else Nothing
-    Nothing  -> return Nothing
-
-sListUsers :: Query AuthState [D.Username]
-sListUsers = do
-  udb <- sAskUsers
-  return $ map username $ toList udb
-
-sNumUsers :: Query AuthState Int
-sNumUsers = liftM length sListUsers
-
-sSetSession :: SessionKey -> D.SessionData -> Update AuthState ()
-sSetSession key u = do
-  sModSessions $ Sessions . (M.insert key u) . unsession
-  return ()
-
-sNewSession :: D.SessionData -> Update AuthState SessionKey
-sNewSession u = do
-  key <- getRandom
-  sSetSession key u
-  return key
-
-sDelSession :: SessionKey -> Update AuthState ()
-sDelSession key = do
-  sModSessions $ Sessions . (M.delete key) . unsession
-  return ()
-
-sClearAllSessions :: Update AuthState ()
-sClearAllSessions = sModSessions $ const (Sessions M.empty)
-
-sGetSession :: SessionKey -> Query AuthState (Maybe D.SessionData)
-sGetSession key = liftM ((M.lookup key) . unsession) sAskSessions
-
-sGetSessions :: Query AuthState (Sessions D.SessionData)
-sGetSessions = sAskSessions
-
-sNumSessions:: Query AuthState Int
-sNumSessions = liftM (M.size . unsession) sAskSessions
-
-$(mkMethods ''AuthState
-    [ 'sAskUsers
-    , 'sAddUser
-    , 'sGetUser
-    , 'sGetUserById
-    , 'sDelUser
-    , 'sAuthUser
-    , 'sIsUser
-    , 'sListUsers
-    , 'sNumUsers
-    , 'sUpdateUser
-
-    , 'sClearAllSessions
-    , 'sSetSession
-    , 'sGetSession
-    , 'sGetSessions
-    , 'sNewSession
-    , 'sDelSession
-    , 'sNumSessions
-    ])
 
 
 --------------------------------------------------------------------------------
@@ -308,64 +146,64 @@ instance Convertible SessionData D.SessionData where
 addUser :: (MonadIO m) => Username -> Password -> m (Maybe User)
 addUser u p = do
     s <- liftIO $ buildSaltAndHash p
-    maybeUser . update $ SAddUser (D.Username u) s
+    maybeUser . update $ AddUser (D.Username u) s
 
 getUser :: (MonadIO m) => Username -> m (Maybe User)
-getUser u = maybeUser . query $ SGetUser (D.Username u)
+getUser u = maybeUser . query $ GetUser (D.Username u)
 
 getUserById :: (MonadIO m) => UserId -> m (Maybe User)
-getUserById i = maybeUser . query $ SGetUserById i
+getUserById i = maybeUser . query $ GetUserById i
 
 delUser :: (MonadIO m) => Username -> m ()
-delUser u = update $ SDelUser (D.Username u)
+delUser u = update $ DelUser (D.Username u)
 
 authUser :: (MonadIO m) => Username -> Password -> m (Maybe User)
-authUser u p = maybeUser . query $ SAuthUser u p
+authUser u p = maybeUser . query $ AuthUser u p
 
 isUser :: (MonadIO m) => Username -> m Bool
-isUser u = query $ SIsUser (D.Username u)
+isUser u = query $ IsUser (D.Username u)
 
 listUsers :: (MonadIO m) => m [Username]
-listUsers = query SListUsers >>= return . map D.unUser
+listUsers = query ListUsers >>= return . map D.unUser
 
 numUsers :: (MonadIO m) => m Int
-numUsers = query SNumUsers
+numUsers = query NumUsers
 
 -- | Update (replace) a user
 updateUser :: (MonadIO m) => User -> m ()
-updateUser u = update $ SUpdateUser (toDUser u)
+updateUser u = update $ UpdateUser (toDUser u)
 
 -- | Warning: This `UserDB' uses the internal types from
 -- "Happstack.Auth.Data.Internal"
 askUsers :: (MonadIO m) => m UserDB
-askUsers = query SAskUsers
+askUsers = query AskUsers
 
 
 --------------------------------------------------------------------------------
 -- End user functions: Sessions
 
 clearAllSessions :: (MonadIO m) => m ()
-clearAllSessions = update SClearAllSessions
+clearAllSessions = update ClearAllSessions
 
 setSession :: (MonadIO m) => SessionKey -> SessionData -> m ()
-setSession k d = update $ SSetSession k (toDSession d)
+setSession k d = update $ SetSession k (toDSession d)
 
 getSession :: (MonadIO m) => SessionKey -> m (Maybe SessionData)
-getSession k = query (SGetSession k) >>= return . fmap fromDSession
+getSession k = query (GetSession k) >>= return . fmap fromDSession
 
 newSession :: (MonadIO m) => SessionData -> m SessionKey
-newSession d = update $ SNewSession (toDSession d)
+newSession d = update $ NewSession (toDSession d)
 
 delSession :: (MonadIO m) => SessionKey -> m ()
-delSession k = update $ SDelSession k
+delSession k = update $ DelSession k
 
 numSessions :: (MonadIO m) => m Int
-numSessions = query $ SNumSessions
+numSessions = query $ NumSessions
 
 -- | Warning: This `Sessions' uses the internal types from
 -- "Happstack.Auth.Data.Internal"
 getSessions :: (MonadIO m) => m (Sessions D.SessionData)
-getSessions = query SGetSessions
+getSessions = query GetSessions
 
 
 --------------------------------------------------------------------------------

@@ -2,7 +2,7 @@
              TypeFamilies
              #-}
 
-module Happstack.Auth.Data.Internal.Username where
+module Happstack.Auth.Internal.Data.Username where
 
 import Data.Data
 import Happstack.Data
