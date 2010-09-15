@@ -44,9 +44,8 @@ demoLogin = withSession (demoResponse . loggedInTemplate) $
                  (seeOther "/happstack-auth" $ toResponse "Login OK")
                  loginH
   where
-    loginH (Just u) Nothing  = demoResponse $ loginFailTemplate u Nothing
-    loginH (Just u) (Just p) = demoResponse $ loginFailTemplate u (Just p)
-    loginH _ _               = demoResponse loginTemplate
+    loginH (Just u) p = demoResponse $ loginFailTemplate u p
+    loginH _ _        = demoResponse loginTemplate
 
 
 demoLogout :: ServerPart Response
