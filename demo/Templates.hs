@@ -4,7 +4,6 @@
 module Templates where
 
 import Prelude hiding (head, div, id, span)
-import Data.List hiding (head, span)
 import Data.Maybe
 
 import Text.Blaze
@@ -34,11 +33,41 @@ homeTemplate = do
         -- em "(currently disabled) "
         "and login to see some statistics."
 
+
     h2 ! class_ "label-yellow" $ "Using Happstack-Auth"
 
     p $ do
-        "See \"Quick Links\" on the right sidebar." -- TODO :)
+        "You can take a look at the "
+        a ! href "http://github.com/mcmaniac/happstack-auth/tree/master/demo/" $ "source code"
+        " of this website to see a working example."
 
+    p $ "Happstack-Auth is installed via cabal:"
+    div ! class_ "code" $ code $ do
+        "$ git clone git://github.com/mcmaniac/happstack-auth.git"
+        br
+        "$ cd happstack-auth"
+        br
+        "$ cabal install"
+
+    p "Run the demo via runghc and open your browser at \"http://localhost:8080\":"
+    div ! class_ "code" $ code $ do
+        "$ cd demo"
+        br
+        "$ runghc Main.hs"
+
+    p $ do
+        "To learn more about Happstack-Auth and Happstack in general follow the links on the "
+        "\"Quick Links\" section of the sidebar on the right."
+
+
+    h2 ! class_ "label-yellow" $ "Developing Happstack-Auth"
+
+    p "Happstack-Auth is an unofficial Happstack module, maintained by Nils Schweinsberg."
+    p $ do
+        "If you discover any bugs or have a feature request, just send me a "
+        " quick email or contact me via "
+        a ! href "http://github.com/mcmaniac" $ "github.com"
+        "."
 
 
 --------------------------------------------------------------------------------
@@ -51,7 +80,7 @@ loggedInTemplate (SessionData _ un) = do
 
 loginForm :: Maybe Username -> Html
 loginForm un =
-    form ! action "/login" ! method "post" ! enctype "multipart/form-data" $ do
+    form ! action "/happstack-auth/login" ! method "post" ! enctype "multipart/form-data" $ do
 
         label "Username:"
         input ! type_ "text"     ! name "username" ! value (stringValue $ fromMaybe "" un)
@@ -86,7 +115,7 @@ loginFailTemplate un (Just _) = do
 
 regForm :: Maybe Username -> Html
 regForm un = do
-    form ! action "/register" ! method "post" ! enctype "multipart/form-data" $ do
+    form ! action "/happstack-auth/register" ! method "post" ! enctype "multipart/form-data" $ do
 
         label "Username:"
         input ! type_ "text"     ! name "username" ! value (stringValue $ fromMaybe "" un)
@@ -152,7 +181,7 @@ defaultHeader maybeTitle = do
     meta ! http_equiv "Content-Type" ! content "text/html; charset=UTF-8"
     meta ! name "description"        ! content "A Happstack Authentication Suite"
     meta ! name "keywords"           ! content "happstack-auth, happstack, haskell, web framework, web server"
-    link ! href "/theme.css" ! rel "stylesheet" ! type_ "text/css"
+    link ! href "/happstack-auth/theme.css" ! rel "stylesheet" ! type_ "text/css"
     title . string $ "Happstack-Auth" ++ maybe "" (" - " ++) maybeTitle
 
 defaultBody :: Maybe SessionData
@@ -167,7 +196,7 @@ defaultBody maybeSession cur cont = do
             span ! class_ "logo-sub" $ "A Happstack Authentication Suite"
 
         ul ! id "main-menu" $ do
-            foldr makeMenu (return ()) [ (["/"]             , "Home")
+            foldr makeMenu (return ()) [ (["", "/"]         , "Home")
                                        , (["/register"]     , "Register")
                                        , (["/login"]        , "Login")
                                        , (["/logout"]       , "Logout")
@@ -186,9 +215,17 @@ defaultBody maybeSession cur cont = do
                      -- p . string $ "User ID: " ++ show i
 
             h3 ! class_ "label-green" $ "Quick Links"
-            ul ! id "quicklinks" $ do
+            ul ! class_ "quicklinks" $ do
                 li $ a ! href "http://n-sch.de/hdocs/happstack-auth"      $ "API Reference"
                 li $ a ! href "http://github.com/mcmaniac/happstack-auth" $ "Happstack-Auth @ github.com"
+                li $ a ! href "http://www.happstack.com"                  $ "Happstack Website"
+                li $ a ! href "http://groups.google.com/group/HAppS"      $ "Happstack Mailinglist"
+
+            h3 ! class_ "label-green" $ "Contact"
+            p "Nils Schweinsberg"
+            ul ! class_ "quicklinks" $ do
+                li $ do "Email: mail @ n-sch.de"
+                li "Freenode: McManiaC"
 
         div ! id "content" $ cont
 
@@ -200,17 +237,11 @@ defaultBody maybeSession cur cont = do
         | name == "Register" && isJust    maybeSession = h
         | name == "Login"    && isJust    maybeSession = h
         | name == "Logout"   && isNothing maybeSession = h
-        | name == "Home" = do
-            if cur == "/" || null cur then
-                li ! class_ "current" $ a ! href "/" $ string name
-              else
-                li $ a ! href "/" $ string name
-            h
-        | or (map (`isPrefixOf` cur) paths) = do
-            li ! class_ "current" $ a ! href (stringValue url) $ string name
+        | or (map (\u -> "/happstack-auth" ++ u == cur) paths) = do
+            li ! class_ "current" $ a ! href (stringValue $ "/happstack-auth" ++ url) $ string name
             h
         | otherwise = do
-            li $ a ! href (stringValue url) $ string name
+            li $ a ! href (stringValue $ "/happstack-auth" ++ url) $ string name
             h
 
     makeMenu _ h = h

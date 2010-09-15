@@ -9,7 +9,7 @@ import Text.Blaze
 import Templates
 
 postPolicy :: BodyPolicy
-postPolicy = defaultBodyPolicy "/tmp/happstack-auth-demo" 1024 1024 1024
+postPolicy = defaultBodyPolicy "/tmp/happstack-auth-demo" 0 1024 1024
 
 demoResponse :: Html        -- ^ Body
              -> ServerPart Response
@@ -34,14 +34,14 @@ demoRegister = withSession (demoResponse . loggedInTemplate) $ do
     case dat of
          Right (un,pw) -> do
              register (demoResponse $ invalidUsernameTemplate un)
-                      demoHome
+                      (seeOther "/happstack-auth" $ toResponse "Registration OK")
                       un pw
          _ -> demoResponse registerTemplate
 
 demoLogin :: ServerPart Response
 demoLogin = withSession (demoResponse . loggedInTemplate) $
     loginHandler Nothing Nothing
-                 demoStats
+                 (seeOther "/happstack-auth" $ toResponse "Login OK")
                  loginH
   where
     loginH (Just u) Nothing  = demoResponse $ loginFailTemplate u Nothing
@@ -50,7 +50,7 @@ demoLogin = withSession (demoResponse . loggedInTemplate) $
 
 
 demoLogout :: ServerPart Response
-demoLogout = logoutHandler demoHome
+demoLogout = logoutHandler (seeOther "/happstack-auth" $ toResponse "Logout OK")
 
 demoStats :: ServerPart Response
 demoStats = do

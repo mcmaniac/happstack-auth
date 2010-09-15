@@ -8,10 +8,15 @@ import Demo
 
 appRoute :: ServerPart Response
 appRoute = msum
-    [ nullDir >>     demoHome
-    , dir "register" demoRegister
-    , dir "login"    demoLogin
-    , dir "logout"   demoLogout
-    , dir "stats"    demoStats
-    , fileServe [] "."
+    [ dir "happstack-auth" $ msum
+        [ nullDir >>      demoHome
+        , dir' "register" demoRegister
+        , dir' "login"    demoLogin
+        , dir' "logout"   demoLogout
+        , dir' "stats"    demoStats
+        , fileServe [] "."
+        ]
+    , seeOther "/happstack-auth" (toResponse "")
     ]
+  where
+    dir' p r = dir p (nullDir >> r)
