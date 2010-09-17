@@ -5,6 +5,7 @@ module Templates where
 
 import Prelude hiding (head, div, id, span)
 import Data.Maybe
+import Data.ByteString.Char8 (unpack)
 
 import Text.Blaze
 import Text.Blaze.Html5 hiding (map, style)
@@ -74,7 +75,7 @@ homeTemplate = do
 -- Login Status templates
 
 loggedInTemplate :: SessionData -> Html
-loggedInTemplate (SessionData _ un) = do
+loggedInTemplate (SessionData _ un _ _) = do
     h1 ! class_ "label-red" $ "Already logged in."
     p $ string $ "You are already logged in as " ++ un ++ "."
 
@@ -207,19 +208,25 @@ defaultBody maybeSession cur cont = do
         -- Session info:
         div ! id "sidebar" $ do
 
-            h3 ! class_ "label-green" $ "Current Session"
-            case maybeSession of
-                 Nothing -> p "Currently not logged in."
-                 Just (SessionData _ un) -> do
-                     p . string $ "Logged in as: " ++ un
-                     -- p . string $ "User ID: " ++ show i
-
             h3 ! class_ "label-green" $ "Quick Links"
             ul ! class_ "quicklinks" $ do
                 li $ a ! href "http://n-sch.de/hdocs/happstack-auth"      $ "API Reference"
                 li $ a ! href "http://github.com/mcmaniac/happstack-auth" $ "Happstack-Auth @ github.com"
                 li $ a ! href "http://www.happstack.com"                  $ "Happstack Website"
                 li $ a ! href "http://groups.google.com/group/HAppS"      $ "Happstack Mailinglist"
+
+            h3 ! class_ "label-green" $ "Current Session"
+            case maybeSession of
+                 Nothing -> p "Currently not logged in."
+                 Just (SessionData _ un c (_,ua)) -> do
+
+                     p . string $ "Logged in as: " ++ un
+                     p $ do "Session timeout:"
+                            br
+                            span ! class_ "session-info" $ string $ show c
+                     p $ do "User agent:"
+                            br
+                            span ! class_ "session-info" $ string $ maybe "-" ((++ "...") . take 30 . unpack) ua
 
             h3 ! class_ "label-green" $ "Contact"
             p "Nils Schweinsberg"

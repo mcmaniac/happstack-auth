@@ -23,6 +23,7 @@ Library
         mtl                 == 1.*,
         containers          == 0.*,
         random              == 1.*,
+        old-time            == 1.*,
         happstack           == 0.5.*,
         happstack-state     == 0.5.*,
         happstack-server    == 0.5.*,
@@ -45,3 +46,5 @@ Library
         Happstack.Auth.Internal.Data.User
         Happstack.Auth.Internal.Data.UserId
         Happstack.Auth.Internal.Data.Username
+
+        Happstack.Auth.Internal.Data.Old.SessionData0
