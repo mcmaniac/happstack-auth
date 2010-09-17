@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell, TypeSynonymInstances, MultiParamTypeClasses,
-             FlexibleContexts, FlexibleInstances, TupleSections
+             FlexibleContexts, FlexibleInstances, TupleSections, CPP
              #-}
 
 module Happstack.Auth
@@ -71,8 +71,10 @@ import Happstack.Auth.Internal.Data hiding (Username, User, SessionData)
 import qualified Happstack.Auth.Internal.Data as D
 
 
+#if MIN_VERSION_happstack(0,5,1)
 queryPolicy :: BodyPolicy
 queryPolicy = defaultBodyPolicy "/tmp/happstack-auth" 0 4096 4096
+#endif
 
 sessionCookie :: String
 sessionCookie = "sid"
@@ -239,7 +241,11 @@ loginHandler :: (MonadIO m, FilterMonad Response m, MonadPlus m, ServerMonad m)
              -> (Maybe Username -> Maybe Password -> m a)       -- ^ Fail response. Arguments: Post data
              -> m a
 loginHandler muname mpwd okR failR = do
+#if MIN_VERSION_happstack(0,5,1)
     dat <- getDataFn queryPolicy . body $ do
+#else
+    dat <- getDataFn $ do
+#endif
         un <- look            $ fromMaybe "username" muname
         pw <- optional . look $ fromMaybe "password" mpwd
         return (un,pw)
