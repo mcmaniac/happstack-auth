@@ -23,7 +23,7 @@ homeTemplate = do
     h1 ! class_ "label-green" $ "Welcome to Happstack-Auth!"
 
     p $ do
-        "Happstack-Auth is a authentication suite for the "
+        "Happstack-Auth is an authentication suite for the "
         a ! href "http://www.haskell.org" $ "Haskell"
         " web framework "
         a ! href "http://www.happstack.com" $ "Happstack"
