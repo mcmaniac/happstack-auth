@@ -12,7 +12,7 @@ Description:         An easy way to to implement user authentication for
 
 Homepage:            http://n-sch.de/happstack-auth
 Build-Type:          Simple
-Cabal-Version:       >= 1.6
+Cabal-Version:       >= 1.8
 
 Library
 

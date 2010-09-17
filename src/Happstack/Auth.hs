@@ -29,7 +29,7 @@
 --------------------------------------------------------------------------------
 
 {-# LANGUAGE TemplateHaskell, TypeSynonymInstances, MultiParamTypeClasses,
-             FlexibleContexts, FlexibleInstances, TupleSections
+             FlexibleContexts, FlexibleInstances, TupleSections, CPP
              #-}
 
 module Happstack.Auth
@@ -107,8 +107,10 @@ import Happstack.Auth.Internal.Data hiding (Username, User, SessionData)
 import qualified Happstack.Auth.Internal.Data as D
 
 
+#if MIN_VERSION_happstack(0,5,1)
 queryPolicy :: BodyPolicy
 queryPolicy = defaultBodyPolicy "/tmp/happstack-auth" 0 4096 4096
+#endif
 
 sessionCookie :: String
 sessionCookie = "sid"
@@ -305,7 +307,6 @@ performLogin mins user action = do
     let clock = addToClockTime noTimeDiff { tdMin = mins } c
     key <- newSession $ SessionData (userId user) (userName user) clock f
 
-    -- addCookie (2678400) $ mkCookie sessionCookie (show key)
     let cookie = mkCookie sessionCookie (show key)
     addCookie (mins * 60) cookie
 
@@ -320,7 +321,11 @@ loginHandler :: (MonadIO m, FilterMonad Response m, MonadPlus m, ServerMonad m)
              -> (Maybe Username -> Maybe Password -> m a)       -- ^ Fail response. Arguments: Post data
              -> m a
 loginHandler mins muname mpwd okR failR = do
+#if MIN_VERSION_happstack(0,5,1)
     dat <- getDataFn queryPolicy . body $ do
+#else
+    dat <- getDataFn $ do
+#endif
         un <- look            $ fromMaybe "username" muname
         pw <- optional . look $ fromMaybe "password" mpwd
         return (un,pw)
@@ -351,7 +356,10 @@ logoutHandler target = withSessionId handler
 
 
 clearSessionCookie :: (FilterMonad Response m) => m ()
-clearSessionCookie = addCookie 0 (mkCookie sessionCookie "0")
+clearSessionCookie = addCookie' 0 (mkCookie sessionCookie "0")
+  where
+    -- Used to replace any previous "addCookie" commands (-> updateTimeout)
+    addCookie' sec = (setHeaderM "Set-Cookie") . mkCookieHeader sec
 
 clearExpiredSessions :: (MonadIO m) => m ()
 clearExpiredSessions = liftIO getClockTime >>= update . ClearExpiredSessions

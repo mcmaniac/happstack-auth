@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell, GeneralizedNewtypeDeriving, DeriveDataTypeable,
-             TypeFamilies
+             TypeFamilies, MultiParamTypeClasses
              #-}
 
 
