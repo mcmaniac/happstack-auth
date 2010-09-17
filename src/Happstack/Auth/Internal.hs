@@ -16,6 +16,8 @@ module Happstack.Auth.Internal
     , ListUsers (..)
     , NumUsers (..)
     , UpdateUser (..)
+    , SetPassword (..)
+    , ChangePassword (..)
 
     , ClearAllSessions (..)
     , SetSession (..)
@@ -24,6 +26,8 @@ module Happstack.Auth.Internal
     , NewSession (..)
     , DelSession (..)
     , NumSessions (..)
+    , ClearExpiredSessions (..)
+    , UpdateTimeout (..)
     ) where
 
 
@@ -40,6 +44,7 @@ import Data.ByteString.Internal
 import Data.Digest.SHA512
 import Happstack.Data.IxSet hiding (null)
 import Happstack.State
+import Happstack.State.ClockTime
 
 import Happstack.Auth.Internal.Data hiding (Username, User, SessionData)
 import qualified Happstack.Auth.Internal.Data as D
@@ -82,9 +87,6 @@ checkSalt str (SaltedHash h) = h == salt++(slowHash $ salt++(strToOctets str))
 askUsers :: Query AuthState UserDB
 askUsers = return . users =<< ask
 
-askSessions :: Query AuthState (Sessions D.SessionData)
-askSessions = return . sessions =<< ask
-
 getUser :: D.Username -> Query AuthState (Maybe D.User)
 getUser un = do
   udb <- askUsers
@@ -97,9 +99,6 @@ getUserById uid = do
 
 modUsers :: (UserDB -> UserDB) -> Update AuthState ()
 modUsers f = modify (\s -> (AuthState (sessions s) (f $ users s) (nextUid s)))
-
-modSessions :: (Sessions D.SessionData -> Sessions D.SessionData) -> Update AuthState ()
-modSessions f = modify (\s -> (AuthState (f $ sessions s) (users s) (nextUid s)))
 
 getAndIncUid :: Update AuthState D.UserId
 getAndIncUid = do
@@ -151,9 +150,38 @@ listUsers = do
 numUsers :: Query AuthState Int
 numUsers = liftM length listUsers
 
+setPassword :: D.Username -> SaltedHash -> Update AuthState Bool
+setPassword un h = do
+    mu <- runQuery $ getUser un
+    case mu of
+         Just u -> do
+             updateUser u { userpass = h }
+             return True
+         _ ->
+             return False
+
+changePassword :: String        -- ^ Username
+               -> String        -- ^ Old password
+               -> SaltedHash    -- ^ New password
+               -> Update AuthState Bool
+changePassword un op s = do
+    mu <- runQuery $ authUser un op
+    case mu of
+         Just u -> do
+             updateUser u { userpass = s }
+             return True
+         _ ->
+             return False
+
 
 --------------------------------------------------------------------------------
 -- State functions: Sessions
+
+askSessions :: Query AuthState (Sessions D.SessionData)
+askSessions = return . sessions =<< ask
+
+modSessions :: (Sessions D.SessionData -> Sessions D.SessionData) -> Update AuthState ()
+modSessions f = modify (\s -> (AuthState (f $ sessions s) (users s) (nextUid s)))
 
 setSession :: SessionKey -> D.SessionData -> Update AuthState ()
 setSession key u = do
@@ -180,9 +208,16 @@ getSession key = liftM ((M.lookup key) . unsession) askSessions
 getSessions :: Query AuthState (Sessions D.SessionData)
 getSessions = askSessions
 
-numSessions:: Query AuthState Int
+numSessions :: Query AuthState Int
 numSessions = liftM (M.size . unsession) askSessions
 
+clearExpiredSessions :: ClockTime -> Update AuthState ()
+clearExpiredSessions c =
+    modSessions $ Sessions . (M.filter ((c <) . sesTimeout)) . unsession
+
+updateTimeout :: SessionKey -> ClockTime -> Update AuthState ()
+updateTimeout sid c = do
+    modSessions $ Sessions . (M.update (\sd -> Just sd { sesTimeout = c }) sid) . unsession
 
 --------------------------------------------------------------------------------
 -- Generate Methods
@@ -198,6 +233,8 @@ $(mkMethods ''AuthState
     , 'listUsers
     , 'numUsers
     , 'updateUser
+    , 'setPassword
+    , 'changePassword
 
     , 'clearAllSessions
     , 'setSession
@@ -206,4 +243,6 @@ $(mkMethods ''AuthState
     , 'newSession
     , 'delSession
     , 'numSessions
+    , 'clearExpiredSessions
+    , 'updateTimeout
     ])

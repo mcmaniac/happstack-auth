@@ -74,7 +74,7 @@ homeTemplate = do
 -- Login Status templates
 
 loggedInTemplate :: SessionData -> Html
-loggedInTemplate (SessionData _ un) = do
+loggedInTemplate (SessionData _ un _ _) = do
     h1 ! class_ "label-red" $ "Already logged in."
     p $ string $ "You are already logged in as " ++ un ++ "."
 
@@ -210,7 +210,7 @@ defaultBody maybeSession cur cont = do
             h3 ! class_ "label-green" $ "Current Session"
             case maybeSession of
                  Nothing -> p "Currently not logged in."
-                 Just (SessionData _ un) -> do
+                 Just (SessionData _ un _ _) -> do
                      p . string $ "Logged in as: " ++ un
                      -- p . string $ "User ID: " ++ show i
 

@@ -22,7 +22,7 @@ data AuthState = AuthState
     , users         :: UserDB
     , nextUid       :: UserId
     }
-  deriving (Show,Read,Typeable,Data)
+  deriving (Show,Typeable,Data)
 
 instance Version AuthState
 

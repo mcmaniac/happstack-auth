@@ -33,14 +33,14 @@ demoRegister = withSession (demoResponse . loggedInTemplate) $ do
                                              <*> look "password"
     case dat of
          Right (un,pw) -> do
-             register (demoResponse $ invalidUsernameTemplate un)
+             register un pw 5
+                      (demoResponse $ invalidUsernameTemplate un)
                       (seeOther "/happstack-auth" $ toResponse "Registration OK")
-                      un pw
          _ -> demoResponse registerTemplate
 
 demoLogin :: ServerPart Response
 demoLogin = withSession (demoResponse . loggedInTemplate) $
-    loginHandler Nothing Nothing
+    loginHandler Nothing Nothing 5
                  (seeOther "/happstack-auth" $ toResponse "Login OK")
                  loginH
   where
