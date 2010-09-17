@@ -11,6 +11,10 @@ import Templates
 postPolicy :: BodyPolicy
 postPolicy = defaultBodyPolicy "/tmp/happstack-auth-demo" 0 1024 1024
 
+-- Session timeouts
+timeout :: Minutes
+timeout = 5
+
 demoResponse :: Html        -- ^ Body
              -> ServerPart Response
 demoResponse html = do
@@ -33,14 +37,14 @@ demoRegister = withSession (demoResponse . loggedInTemplate) $ do
                                              <*> look "password"
     case dat of
          Right (un,pw) -> do
-             register un pw 5
+             register timeout un pw
                       (demoResponse $ invalidUsernameTemplate un)
                       (seeOther "/happstack-auth" $ toResponse "Registration OK")
          _ -> demoResponse registerTemplate
 
 demoLogin :: ServerPart Response
 demoLogin = withSession (demoResponse . loggedInTemplate) $
-    loginHandler Nothing Nothing 5
+    loginHandler timeout Nothing Nothing
                  (seeOther "/happstack-auth" $ toResponse "Login OK")
                  loginH
   where

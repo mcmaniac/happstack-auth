@@ -158,6 +158,12 @@ ul.quicklinks
   font-size: 0.75em;
  }
 
+span.session-info
+{
+  padding-left: 1.25em;
+  font-size: 0.75em;
+ }
+
 .label-yellow
 { 
   border-left: solid #eeee00 4px;
