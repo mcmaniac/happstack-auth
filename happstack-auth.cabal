@@ -1,14 +1,16 @@
 Name:                happstack-auth
 Version:             0.2
 License:             BSD3
+License-File:        LICENSE
 Author:              Nils Schweinsberg
 Maintainer:          mail@n-sch.de
-
-Synopsis:            Happstack authentication suite
-Description:         Happstack module, based on Happstack-State
 Category:            Web
 
-Homepage:            http://github.com/mcmaniac/happstack-auth
+Synopsis:            A Happstack Authentication Suite
+Description:         An easy way to to implement user authentication for
+                     Happstack web applications.
+
+Homepage:            http://n-sch.de/happstack-auth
 Build-Type:          Simple
 Cabal-Version:       >= 1.6
 

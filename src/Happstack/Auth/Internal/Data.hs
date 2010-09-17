@@ -1,3 +1,17 @@
+--------------------------------------------------------------------------------
+-- |
+-- Module       : Happstack.Auth.Internal.Data
+-- Copyright    : (c) Nils Schweinsberg 2010
+-- License      : BSD3 (see LICENSE file)
+--
+-- Maintainer   : mail@n-sch.de
+-- Stability    : experimental
+-- Portability  : non-portable
+--
+-- Internal representation of state data types.
+--
+--------------------------------------------------------------------------------
+
 {-# LANGUAGE TemplateHaskell, GeneralizedNewtypeDeriving, DeriveDataTypeable,
              TypeFamilies
              #-}

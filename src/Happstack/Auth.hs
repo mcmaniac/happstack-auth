@@ -1,3 +1,33 @@
+--------------------------------------------------------------------------------
+-- |
+-- Module       : Happstack.Auth
+-- Copyright    : (c) Nils Schweinsberg 2010
+-- License      : BSD3 (see LICENSE file)
+--
+-- Maintainer   : mail@n-sch.de
+-- Stability    : experimental
+-- Portability  : non-portable
+--
+-- Happstack.Auth offers an easy way to implement user authentication for
+-- Happstack web applications. It uses "Happstack.State" as database back-end
+-- and SHA512 for password encryption. Session safety is ensured by a HTTP
+-- header fingerprint (client ip & user-agent) and a configurable session
+-- timeout.
+-- 
+-- To use this module, add the `AuthState' to your state dependencies, for
+-- example:
+--
+-- > import Happstack.Auth
+-- >
+-- > instance Component MyState where
+-- >     type Dependencies MyState = AuthState :+: End
+-- >     initialValue = ...
+--
+-- One of the first things in your response monad should be `updateTimeout' to
+-- make sure session timeouts are updated correctly.
+--
+--------------------------------------------------------------------------------
+
 {-# LANGUAGE TemplateHaskell, TypeSynonymInstances, MultiParamTypeClasses,
              FlexibleContexts, FlexibleInstances, TupleSections
              #-}
@@ -17,11 +47,11 @@ module Happstack.Auth
     , performLogout
     , loginHandler
     , logoutHandler
-    , clearSessionCookie
-    , getSessionData
-    , getSessionKey
     , withSession
     , loginGate
+    , getSessionData
+    , getSessionKey
+    , clearSessionCookie
 
       -- * Basic functions
 
@@ -134,7 +164,7 @@ data SessionData = SessionData
     { sessionUserId         :: UserId
     , sessionUsername       :: Username
     , sessionTimeout        :: ClockTime
-    , sessionFingerprint    :: (Either String BS8.ByteString, Maybe BS8.ByteString) -- ^ IP & user-agent
+    , sessionFingerprint    :: (Either String BS8.ByteString, Maybe BS8.ByteString) -- ^ either IP or \"x-forwarded-for\" header & user-agent
     }
 
 fromDSession :: D.SessionData -> SessionData
