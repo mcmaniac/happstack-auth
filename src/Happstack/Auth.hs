@@ -277,7 +277,6 @@ performLogin mins user action = do
     let clock = addToClockTime noTimeDiff { tdMin = mins } c
     key <- newSession $ SessionData (userId user) (userName user) clock f
 
-    -- addCookie (2678400) $ mkCookie sessionCookie (show key)
     let cookie = mkCookie sessionCookie (show key)
     addCookie (mins * 60) cookie
 
@@ -327,7 +326,10 @@ logoutHandler target = withSessionId handler
 
 
 clearSessionCookie :: (FilterMonad Response m) => m ()
-clearSessionCookie = addCookie 0 (mkCookie sessionCookie "0")
+clearSessionCookie = addCookie' 0 (mkCookie sessionCookie "0")
+  where
+    -- Used to replace any previous "addCookie" commands (-> updateTimeout)
+    addCookie' sec = (setHeaderM "Set-Cookie") . mkCookieHeader sec
 
 clearExpiredSessions :: (MonadIO m) => m ()
 clearExpiredSessions = liftIO getClockTime >>= update . ClearExpiredSessions
