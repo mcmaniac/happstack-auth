@@ -100,6 +100,11 @@ import qualified Data.ByteString.Char8 as BS8
 
 import Data.Convertible
 import Happstack.Server
+
+#if MIN_VERSION_happstack(0,5,1)
+import Happstack.Server.HTTP.Cookie
+#endif
+
 import Happstack.State
 
 import Happstack.Auth.Internal
