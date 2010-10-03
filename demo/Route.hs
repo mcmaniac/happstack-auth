@@ -7,7 +7,7 @@ import Happstack.Server
 
 import Demo
 
-appRoute :: ServerPart Response
+appRoute :: ServerPartT IO Response
 appRoute = updateTimeout timeout >> msum
     [ dir "happstack-auth" $ msum
         [ nullDir >>      demoHome

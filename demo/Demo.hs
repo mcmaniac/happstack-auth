@@ -16,7 +16,7 @@ timeout :: Minutes
 timeout = 5
 
 demoResponse :: Html        -- ^ Body
-             -> ServerPart Response
+             -> ServerPartT IO Response
 demoResponse html = do
     maybeSession <- getSessionData
     uri          <- rqUri <$> askRq
@@ -28,10 +28,10 @@ demoResponse html = do
 --------------------------------------------------------------------------------
 -- Response handler
 
-demoHome :: ServerPart Response
+demoHome :: ServerPartT IO Response
 demoHome = demoResponse homeTemplate
 
-demoRegister :: ServerPart Response
+demoRegister :: ServerPartT IO Response
 demoRegister = withSession (demoResponse . loggedInTemplate) $ do
     dat <- getDataFn postPolicy . body $ (,) <$> look "username"
                                              <*> look "password"
@@ -42,7 +42,7 @@ demoRegister = withSession (demoResponse . loggedInTemplate) $ do
                       (seeOther "/happstack-auth" $ toResponse "Registration OK")
          _ -> demoResponse registerTemplate
 
-demoLogin :: ServerPart Response
+demoLogin :: ServerPartT IO Response
 demoLogin = withSession (demoResponse . loggedInTemplate) $
     loginHandler timeout Nothing Nothing
                  (seeOther "/happstack-auth" $ toResponse "Login OK")
@@ -52,10 +52,10 @@ demoLogin = withSession (demoResponse . loggedInTemplate) $
     loginH _ _        = demoResponse loginTemplate
 
 
-demoLogout :: ServerPart Response
+demoLogout :: ServerPartT IO Response
 demoLogout = logoutHandler (seeOther "/happstack-auth" $ toResponse "Logout OK")
 
-demoStats :: ServerPart Response
+demoStats :: ServerPartT IO Response
 demoStats = do
     nu <- numUsers
     ul <- listUsers
