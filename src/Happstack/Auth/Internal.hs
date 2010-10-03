@@ -53,9 +53,9 @@ import System.Random
 
 import qualified Data.Map as M
 
-import Codec.Utils
+import Codec.Utils (Octet, listToOctets)
 import Data.ByteString.Internal
-import Data.Digest.SHA512
+import Data.Digest.SHA512 (hash)
 import Happstack.Data.IxSet hiding (null)
 import Happstack.State
 import Happstack.State.ClockTime
