@@ -210,10 +210,11 @@ defaultBody maybeSession cur cont = do
 
             h3 ! class_ "label-green" $ "Quick Links"
             ul ! class_ "quicklinks" $ do
-                li $ a ! href "http://n-sch.de/hdocs/happstack-auth"      $ "API Reference"
-                li $ a ! href "http://github.com/mcmaniac/happstack-auth" $ "Happstack-Auth @ github.com"
-                li $ a ! href "http://www.happstack.com"                  $ "Happstack Website"
-                li $ a ! href "http://groups.google.com/group/HAppS"      $ "Happstack Mailinglist"
+                li $ a ! href "http://n-sch.de/hdocs/happstack-auth"                $ "API Reference"
+                li $ a ! href "http://hackage.haskell.org/package/happstack-auth"   $ "Happstack-Auth @ hackageDB"
+                li $ a ! href "http://github.com/mcmaniac/happstack-auth"           $ "Happstack-Auth @ github.com"
+                li $ a ! href "http://www.happstack.com"                            $ "Happstack Website"
+                li $ a ! href "http://groups.google.com/group/HAppS"                $ "Happstack Mailinglist"
 
             h3 ! class_ "label-green" $ "Current Session"
             case maybeSession of
