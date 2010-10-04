@@ -91,7 +91,9 @@ module Happstack.Auth
     ) where
 
 
+#if MIN_VERSION_happstack(0,5,1)
 import Control.Applicative
+#endif
 import Control.Monad.Reader
 import Data.Maybe
 import System.Time
@@ -332,14 +334,26 @@ loginHandler mins muname mpwd okR failR = do
     dat <- getDataFn $ do
 #endif
         un <- look            $ fromMaybe "username" muname
+#if MIN_VERSION_happstack(0,5,1)
         pw <- optional . look $ fromMaybe "password" mpwd
+#else
+        pw <- (Just `fmap` (look $ fromMaybe "password" mpwd)) `mplus` return Nothing
+#endif
         return (un,pw)
 
     case dat of
+#if MIN_VERSION_happstack(0,5,1)
          Right (u, Just p) -> authUser u p
+#else
+         Just (u, Just p)  -> authUser u p
+#endif
                           >>= maybe (failR (Just u) (Just p))
                                     (\user -> performLogin mins user okR)
+#if MIN_VERSION_happstack(0,5,1)
          Right (u, mp)     -> failR (Just u) mp
+#else
+         Just (u, mp)      -> failR (Just u) mp
+#endif
          _                 -> failR Nothing Nothing
 
 
@@ -395,10 +409,18 @@ withSessionId :: (Read a, MonadIO m, MonadPlus m, ServerMonad m)
               -> m r
 withSessionId f = do
     clearExpiredSessions
+#if MIN_VERSION_happstack(0,5,1)
     withDataFn queryPolicy getSessionId f
+#else
+    withDataFn getSessionId f
+#endif
   where
     getSessionId :: (Read a) => RqData (Maybe a)
+#if MIN_VERSION_happstack(0,5,1)
     getSessionId = optional $ readCookieValue sessionCookie
+#else
+    getSessionId = (Just `fmap` readCookieValue sessionCookie) `mplus` return Nothing
+#endif
 
 
 -- | Run a `ServerPartT' with the `SessionData' of the currently logged in user
