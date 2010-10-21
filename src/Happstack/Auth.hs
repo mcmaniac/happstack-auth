@@ -110,8 +110,8 @@ import Happstack.Auth.Internal.Data hiding (Username, User, SessionData)
 import qualified Happstack.Auth.Internal.Data as D
 
 
--- queryPolicy :: BodyPolicy
--- queryPolicy = defaultBodyPolicy "/tmp/happstack-auth" 0 4096 4096
+queryPolicy :: BodyPolicy
+queryPolicy = defaultBodyPolicy "/tmp/happstack-auth" 0 4096 4096
 
 sessionCookie :: String
 sessionCookie = "sid"
@@ -322,6 +322,7 @@ loginHandler :: (MonadIO m, FilterMonad Response m, MonadPlus m, ServerMonad m, 
              -> (Maybe Username -> Maybe Password -> m a)       -- ^ Fail response. Arguments: Post data
              -> m a
 loginHandler mins muname mpwd okR failR = do
+    decodeBody queryPolicy
     dat <- getDataFn . body $ do
         un <- look            $ fromMaybe "username" muname
         pw <- optional . look $ fromMaybe "password" mpwd
@@ -387,6 +388,7 @@ withSessionId :: (Read a, MonadIO m, MonadPlus m, ServerMonad m, HasRqData m)
               -> m r
 withSessionId f = do
     clearExpiredSessions
+    decodeBody queryPolicy
     withDataFn getSessionId f
   where
     getSessionId :: (Read a) => RqData (Maybe a)
