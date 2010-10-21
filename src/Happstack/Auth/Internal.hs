@@ -19,6 +19,7 @@
 
 module Happstack.Auth.Internal
     ( buildSaltAndHash
+    , checkSalt
 
     , AskUsers (..)
     , AddUser (..)
