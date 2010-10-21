@@ -91,9 +91,7 @@ module Happstack.Auth
     ) where
 
 
-#if MIN_VERSION_happstack(0,5,1)
 import Control.Applicative
-#endif
 import Control.Monad.Reader
 import Data.Maybe
 import System.Time
@@ -103,9 +101,7 @@ import qualified Data.ByteString.Char8 as BS8
 import Data.Convertible
 import Happstack.Server
 
-#if MIN_VERSION_happstack(0,5,1)
-import Happstack.Server.HTTP.Cookie
-#endif
+import Happstack.Server.Internal.Cookie
 
 import Happstack.State
 
@@ -114,10 +110,8 @@ import Happstack.Auth.Internal.Data hiding (Username, User, SessionData)
 import qualified Happstack.Auth.Internal.Data as D
 
 
-#if MIN_VERSION_happstack(0,5,1)
-queryPolicy :: BodyPolicy
-queryPolicy = defaultBodyPolicy "/tmp/happstack-auth" 0 4096 4096
-#endif
+-- queryPolicy :: BodyPolicy
+-- queryPolicy = defaultBodyPolicy "/tmp/happstack-auth" 0 4096 4096
 
 sessionCookie :: String
 sessionCookie = "sid"
@@ -288,7 +282,7 @@ type Minutes = Int
 -- > appRoute = updateTimeout 5 >> msum
 -- >     [ {- your routing here -}
 -- >     ]
-updateTimeout :: (MonadIO m, FilterMonad Response m, MonadPlus m, ServerMonad m)
+updateTimeout :: (MonadIO m, FilterMonad Response m, MonadPlus m, ServerMonad m, HasRqData m)
               => Minutes
               -> m ()
 updateTimeout mins = withSessionId action
@@ -320,7 +314,7 @@ performLogin mins user action = do
     localRq (\r -> r { rqCookies = (rqCookies r) ++ [(sessionCookie, cookie)] }) action
 
 -- | Handles data from a login form to log the user in.
-loginHandler :: (MonadIO m, FilterMonad Response m, MonadPlus m, ServerMonad m)
+loginHandler :: (MonadIO m, FilterMonad Response m, MonadPlus m, ServerMonad m, HasRqData m)
              => Minutes                                         -- ^ Session timeout
              -> Maybe String                                    -- ^ POST field to look for username (default: \"username\")
              -> Maybe String                                    -- ^ POST field to look for password (default: \"password\")
@@ -328,32 +322,16 @@ loginHandler :: (MonadIO m, FilterMonad Response m, MonadPlus m, ServerMonad m)
              -> (Maybe Username -> Maybe Password -> m a)       -- ^ Fail response. Arguments: Post data
              -> m a
 loginHandler mins muname mpwd okR failR = do
-#if MIN_VERSION_happstack(0,5,1)
-    dat <- getDataFn queryPolicy . body $ do
-#else
-    dat <- getDataFn $ do
-#endif
+    dat <- getDataFn . body $ do
         un <- look            $ fromMaybe "username" muname
-#if MIN_VERSION_happstack(0,5,1)
         pw <- optional . look $ fromMaybe "password" mpwd
-#else
-        pw <- (Just `fmap` (look $ fromMaybe "password" mpwd)) `mplus` return Nothing
-#endif
         return (un,pw)
 
     case dat of
-#if MIN_VERSION_happstack(0,5,1)
          Right (u, Just p) -> authUser u p
-#else
-         Just (u, Just p)  -> authUser u p
-#endif
                           >>= maybe (failR (Just u) (Just p))
                                     (\user -> performLogin mins user okR)
-#if MIN_VERSION_happstack(0,5,1)
          Right (u, mp)     -> failR (Just u) mp
-#else
-         Just (u, mp)      -> failR (Just u) mp
-#endif
          _                 -> failR Nothing Nothing
 
 
@@ -363,7 +341,7 @@ performLogout sid = do
     delSession sid
 
 
-logoutHandler :: (ServerMonad m, MonadPlus m, MonadIO m, FilterMonad Response m)
+logoutHandler :: (ServerMonad m, MonadPlus m, MonadIO m, FilterMonad Response m, HasRqData m)
               => m a    -- ^ Response after logout
               -> m a
 logoutHandler target = withSessionId handler
@@ -385,7 +363,7 @@ clearExpiredSessions = liftIO getClockTime >>= update . ClearExpiredSessions
 
 
 -- | Get the `SessionData' of the currently logged in user
-getSessionData :: (MonadIO m, MonadPlus m, ServerMonad m)
+getSessionData :: (MonadIO m, MonadPlus m, ServerMonad m, HasRqData m)
                => m (Maybe SessionData)
 getSessionData = do
     d <- withSessionId action
@@ -400,27 +378,19 @@ getSessionData = do
     action Nothing    = return Nothing
 
 -- | Get the identifier for the current session
-getSessionKey :: (MonadIO m, MonadPlus m, ServerMonad m)
+getSessionKey :: (MonadIO m, MonadPlus m, ServerMonad m, HasRqData m)
               => m (Maybe SessionKey)
 getSessionKey = withSessionId return
 
-withSessionId :: (Read a, MonadIO m, MonadPlus m, ServerMonad m)
+withSessionId :: (Read a, MonadIO m, MonadPlus m, ServerMonad m, HasRqData m)
               => (Maybe a -> m r)
               -> m r
 withSessionId f = do
     clearExpiredSessions
-#if MIN_VERSION_happstack(0,5,1)
-    withDataFn queryPolicy getSessionId f
-#else
     withDataFn getSessionId f
-#endif
   where
     getSessionId :: (Read a) => RqData (Maybe a)
-#if MIN_VERSION_happstack(0,5,1)
     getSessionId = optional $ readCookieValue sessionCookie
-#else
-    getSessionId = (Just `fmap` readCookieValue sessionCookie) `mplus` return Nothing
-#endif
 
 
 -- | Run a `ServerPartT' with the `SessionData' of the currently logged in user
