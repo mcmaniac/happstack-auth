@@ -30,11 +30,11 @@ Library
         containers          == 0.*,
         random              == 1.*,
         old-time            == 1.*,
-        happstack           == 0.5.*,
-        happstack-state     == 0.5.*,
-        happstack-server    == 0.5.*,
-        happstack-ixset     == 0.5.*,
-        happstack-data      == 0.5.*,
+        happstack           == 6.*,
+        happstack-state     == 6.*,
+        happstack-server    == 6.*,
+        happstack-ixset     == 6.*,
+        happstack-data      == 6.*,
         convertible         == 1.*
 
     Exposed-Modules:
