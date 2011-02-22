@@ -26,7 +26,7 @@ Library
     Build-Depends:
         base                == 4.*,
         bytestring          == 0.*,
-        mtl                 == 1.*,
+        mtl                 == 2.*,
         containers          == 0.*,
         random              == 1.*,
         old-time            == 1.*,
