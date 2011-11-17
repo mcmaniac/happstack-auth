@@ -3,7 +3,7 @@ module Route where
 import Control.Monad
 
 import Happstack.Auth
-import Happstack.Server
+import Happstack.Server hiding (timeout)
 
 import Demo
 
@@ -15,7 +15,7 @@ appRoute = updateTimeout timeout >> msum
         , dir' "login"    demoLogin
         , dir' "logout"   demoLogout
         , dir' "stats"    demoStats
-        , fileServe [] "."
+        , serveDirectory EnableBrowsing [] "."
         ]
     , nullDir >> seeOther "/happstack-auth" (toResponse "")
     ]

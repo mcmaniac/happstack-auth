@@ -2,14 +2,11 @@ module Demo where
 
 import Control.Applicative
 
-import Happstack.Server
+import Happstack.Server hiding (timeout)
 import Happstack.Auth
 import Text.Blaze
 
 import Templates
-
-postPolicy :: BodyPolicy
-postPolicy = defaultBodyPolicy "/tmp/happstack-auth-demo" 0 1024 1024
 
 -- Session timeouts
 timeout :: Minutes
@@ -33,8 +30,8 @@ demoHome = demoResponse homeTemplate
 
 demoRegister :: ServerPartT IO Response
 demoRegister = withSession (demoResponse . loggedInTemplate) $ do
-    dat <- getDataFn postPolicy . body $ (,) <$> look "username"
-                                             <*> look "password"
+    dat <- getDataFn . body $ (,) <$> look "username"
+                                  <*> look "password"
     case dat of
          Right (un,pw) -> do
              register timeout un pw
