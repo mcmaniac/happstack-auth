@@ -77,14 +77,14 @@ homeTemplate = do
 loggedInTemplate :: SessionData -> Html
 loggedInTemplate (SessionData _ un _ _) = do
     h1 ! class_ "label-red" $ "Already logged in."
-    p $ string $ "You are already logged in as " ++ un ++ "."
+    p $ toHtml $ "You are already logged in as " ++ un ++ "."
 
 loginForm :: Maybe Username -> Html
 loginForm un =
     form ! action "/happstack-auth/login" ! method "post" ! enctype "multipart/form-data" $ do
 
         label "Username:"
-        input ! type_ "text"     ! name "username" ! value (stringValue $ fromMaybe "" un)
+        input ! type_ "text"     ! name "username" ! value (toValue $ fromMaybe "" un)
         br
 
         label "Password:"
@@ -119,7 +119,7 @@ regForm un = do
     form ! action "/happstack-auth/register" ! method "post" ! enctype "multipart/form-data" $ do
 
         label "Username:"
-        input ! type_ "text"     ! name "username" ! value (stringValue $ fromMaybe "" un)
+        input ! type_ "text"     ! name "username" ! value (toValue $ fromMaybe "" un)
         br
 
         label "Password:"
@@ -131,7 +131,7 @@ regForm un = do
 invalidUsernameTemplate :: Username -> Html
 invalidUsernameTemplate un = do
     h1 ! class_ "label-green" $ "Register a new user"
-    h2 ! class_ "label-red"   $ string $ "Error: Invalid username/password"
+    h2 ! class_ "label-red"   $ "Error: Invalid username/password"
     regForm $ Just un
 
 registerTemplate :: Html
@@ -143,7 +143,7 @@ registerTemplate = do
 newUserTemplate :: Username -> Html
 newUserTemplate un = do
     h1 ! class_ "label-green" $ "Registration complete"
-    p $ string $ "Welcome " ++ un ++ "!"
+    p $ toHtml $ "Welcome " ++ un ++ "!"
 
 
 --------------------------------------------------------------------------------
@@ -155,15 +155,15 @@ statsTemplate nu ulist ns = do
     ul ! id "statistics" $ do
         li $ do
             span ! class_ "desc" $ "Number of users:"
-            string $ show nu
+            toHtml $ show nu
 
         li $ do
             span ! class_ "desc" $ "Number of sessions:"
-            string $ show ns
+            toHtml $ show ns
 
         li $ do
             span ! class_ "desc" $ "Current registered users:"
-            ul ! id "usernames" $ mapM_ (\un -> li $ string un) ulist
+            ul ! id "usernames" $ mapM_ (\un -> li $ toHtml un) ulist
 
 --------------------------------------------------------------------------------
 -- Defaults
@@ -179,11 +179,11 @@ defaultTemplate h b =
 defaultHeader :: Maybe String       -- ^ Title
               -> Html
 defaultHeader maybeTitle = do
-    meta ! http_equiv "Content-Type" ! content "text/html; charset=UTF-8"
+    meta ! httpEquiv "Content-Type"  ! content "text/html; charset=UTF-8"
     meta ! name "description"        ! content "A Happstack Authentication Suite"
     meta ! name "keywords"           ! content "happstack-auth, happstack, haskell, web framework, web server"
     link ! href "/happstack-auth/theme.css" ! rel "stylesheet" ! type_ "text/css"
-    title . string $ "Happstack-Auth" ++ maybe "" (" - " ++) maybeTitle
+    title . toHtml $ "Happstack-Auth" ++ maybe "" (" - " ++) maybeTitle
 
 defaultBody :: Maybe SessionData
             -> String               -- ^ Current url
@@ -221,13 +221,13 @@ defaultBody maybeSession cur cont = do
                  Nothing -> p "Currently not logged in."
                  Just (SessionData _ un c (_,ua)) -> do
 
-                     p . string $ "Logged in as: " ++ un
+                     p . toHtml $ "Logged in as: " ++ un
                      p $ do "Session timeout:"
                             br
-                            span ! class_ "session-info" $ string $ show c
+                            span ! class_ "session-info" $ toHtml $ show c
                      p $ do "User agent:"
                             br
-                            span ! class_ "session-info" $ string $ maybe "-" ((++ "...") . take 30 . unpack) ua
+                            span ! class_ "session-info" $ toHtml $ maybe "-" ((++ "...") . take 30 . unpack) ua
 
             h3 ! class_ "label-green" $ "Contact"
             p "Nils Schweinsberg"
@@ -241,15 +241,16 @@ defaultBody maybeSession cur cont = do
         p "Powered by Happstack: A Haskell Web Framework."
 
   where
+    makeMenu :: ([String], String) -> Html -> Html
     makeMenu (paths@(url:_), name) h
         | name == "Register" && isJust    maybeSession = h
         | name == "Login"    && isJust    maybeSession = h
         | name == "Logout"   && isNothing maybeSession = h
         | or (map (\u -> "/happstack-auth" ++ u == cur) paths) = do
-            li ! class_ "current" $ a ! href (stringValue $ "/happstack-auth" ++ url) $ string name
+            li ! class_ "current" $ a ! href (toValue $ "/happstack-auth" ++ url) $ toHtml name
             h
         | otherwise = do
-            li $ a ! href (stringValue $ "/happstack-auth" ++ url) $ string name
+            li $ a ! href (toValue $ "/happstack-auth" ++ url) $ toHtml name
             h
 
     makeMenu _ h = h
