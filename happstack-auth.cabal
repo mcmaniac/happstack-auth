@@ -24,18 +24,18 @@ Library
     GHC-Options:            -Wall
 
     Build-Depends:
-        base                == 4.*,
-        bytestring          == 0.*,
-        mtl                 == 2.*,
-        containers          == 0.*,
-        random              == 1.*,
-        old-time            == 1.*,
-        happstack           == 6.*,
-        happstack-state     == 6.*,
-        happstack-server    == 6.*,
-        happstack-ixset     == 6.*,
-        happstack-data      == 6.*,
-        convertible         == 1.*
+        base,
+        bytestring,
+        mtl,
+        containers,
+        random,
+        old-time,
+        happstack,
+        happstack-server,
+        acid-state,
+        ixset,
+        safecopy,
+        convertible
 
     Exposed-Modules:
         Happstack.Auth

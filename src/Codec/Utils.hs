@@ -6,7 +6,7 @@
 -- Module      :  Codec.Utils
 -- Copyright   :  (c) Dominic Steinitz 2003
 -- License     :  BSD-style (see the file CryptoReadMe.tex)
--- 
+--
 -- Maintainer  :  dominic.steinitz@blueyonder.co.uk
 -- Stability   :  experimental
 -- Portability :  portable
@@ -33,7 +33,7 @@ import Data.Bits
 
 -- powersOf n = 1 : (map (*n) (powersOf n))
 
-toBase x = 
+toBase x =
    map fromIntegral .
    reverse .
    map (flip mod x) .
@@ -58,7 +58,7 @@ trimNulls = reverse . (dropWhile (== 0)) . reverse
 -- The resultant list has nulls trimmed from the end to make this the dual
 -- of listFromOctets (except when the original octet list ended with nulls;
 -- see 'trimNulls').
-listToOctets :: (Bits a, Integral a) => [a] -> [Octet]
+listToOctets :: (FiniteBits a, Integral a) => [a] -> [Octet]
 listToOctets x = trimNulls $ concat paddedOctets where
     paddedOctets :: [[Octet]]
     paddedOctets = map (padTo bytes) rawOctets
@@ -67,7 +67,7 @@ listToOctets x = trimNulls $ concat paddedOctets where
     padTo :: Int -> [Octet] -> [Octet]
     padTo x y = take x $ y ++ repeat 0
     bytes :: Int
-    bytes = bitSize (head x) `div` 8
+    bytes = finiteBitSize (head x) `div` 8
 
 -- | The basic type for encoding and decoding.
 
@@ -84,9 +84,9 @@ msb = bitSize (undefined::Octet) - 1
 --   to a number.
 
 fromOctets :: (Integral a, Integral b) => a -> [Octet] -> b
-fromOctets n x = 
-   fromIntegral $ 
-   sum $ 
+fromOctets n x =
+   fromIntegral $
+   sum $
    zipWith (*) (powersOf n) (reverse (map fromIntegral x))
 
 -- | See 'listToOctets'.
@@ -99,7 +99,7 @@ listFromOctets x = result where
     rest = listFromOctets $ drop bytes x
     bytes = bitSize first `div` 8
 
--- | Take the length of the required number of octets and convert the 
+-- | Take the length of the required number of octets and convert the
 --   number to base 256 padding it out to the required length. If the
 --   required length is less than the number of octets of the converted
 --   number then return the converted number. NB this is different from
@@ -107,7 +107,7 @@ listFromOctets x = result where
 --   but mimics how replicate behaves.
 
 i2osp :: Integral a => Int -> a -> [Octet]
-i2osp l y = 
+i2osp l y =
    pad ++ z
       where
          pad = replicate (l - unPaddedLen) (0x00::Octet)

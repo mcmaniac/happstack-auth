@@ -6,12 +6,14 @@ module Happstack.Auth.Internal.Data.SessionKey where
 
 import Data.Data
 import System.Random
-import Happstack.Data
+import Data.SafeCopy
+import Happstack.Server.Internal.Types
 
 -- | Abstract session identification
 newtype SessionKey = SessionKey Integer
   deriving (Read,Show,Ord,Eq,Typeable,Data,Num,Random)
 
-$(deriveSerialize ''SessionKey)
+deriveSafeCopy 1 'base ''SessionKey
 
-instance Version SessionKey
+instance FromReqURI SessionKey where
+  fromReqURI s = SessionKey `fmap` fromReqURI s

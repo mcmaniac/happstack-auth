@@ -1,13 +1,14 @@
-{-# LANGUAGE TemplateHaskell, GeneralizedNewtypeDeriving, DeriveDataTypeable,
+{-# LANGUAGE TemplateHaskell, GeneralizedNewtypeDeriving,
              TypeFamilies, MultiParamTypeClasses
              #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 
 module Happstack.Auth.Internal.Data.SessionData where
 
-import Data.Data
+import Data.Typeable
 import Data.ByteString
-import Happstack.Data
-import Happstack.State.ClockTime
+import Data.SafeCopy
+import System.Time
 
 import Happstack.Auth.Internal.Data.UserId
 import Happstack.Auth.Internal.Data.Username
@@ -20,12 +21,10 @@ data SessionData = SessionData
     , sesTimeout        :: ClockTime
     , sesFingerprint    :: (Either String ByteString, Maybe ByteString)
     }
-  deriving (Show,Eq,Typeable,Data)
+  deriving (Show,Eq,Typeable)
 
-$(deriveSerialize ''SessionData)
+deriveSafeCopy 2 'extension ''SessionData
 
-instance Version SessionData where
-    mode = extension 1 (Proxy :: Proxy Old.SessionData)
-
-instance Migrate Old.SessionData SessionData where
+instance Migrate SessionData where
+    type MigrateFrom SessionData = Old.SessionData
     migrate (Old.SessionData uid un) = SessionData uid un (TOD 0 0) (Left "", Nothing)

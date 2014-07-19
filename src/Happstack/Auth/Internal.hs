@@ -15,6 +15,7 @@
 {-# LANGUAGE TemplateHaskell, TypeSynonymInstances, MultiParamTypeClasses,
              FlexibleContexts, FlexibleInstances, DeriveDataTypeable
              #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Happstack.Auth.Internal
@@ -38,7 +39,6 @@ module Happstack.Auth.Internal
     , SetSession (..)
     , GetSession (..)
     , GetSessions (..)
-    , NewSession (..)
     , DelSession (..)
     , NumSessions (..)
     , ClearExpiredSessions (..)
@@ -57,9 +57,9 @@ import qualified Data.Map as M
 import Codec.Utils (Octet, listToOctets)
 import Data.ByteString.Internal
 import Data.Digest.SHA512 (hash)
-import Happstack.Data.IxSet hiding (null)
-import Happstack.State
-import Happstack.State.ClockTime
+import Data.IxSet hiding (null)
+import Data.Acid
+import System.Time
 
 import Happstack.Auth.Internal.Data hiding (Username, User, SessionData)
 import qualified Happstack.Auth.Internal.Data as D
@@ -167,7 +167,7 @@ numUsers = liftM length listUsers
 
 setPassword :: D.Username -> SaltedHash -> Update AuthState Bool
 setPassword un h = do
-    mu <- runQuery $ getUser un
+    mu <- liftQuery $ getUser un
     case mu of
          Just u -> do
              updateUser u { userpass = h }
@@ -180,7 +180,7 @@ changePassword :: String        -- ^ Username
                -> SaltedHash    -- ^ New password
                -> Update AuthState Bool
 changePassword un op s = do
-    mu <- runQuery $ authUser un op
+    mu <- liftQuery $ authUser un op
     case mu of
          Just u -> do
              updateUser u { userpass = s }
@@ -202,12 +202,6 @@ setSession :: SessionKey -> D.SessionData -> Update AuthState ()
 setSession key u = do
   modSessions $ Sessions . (M.insert key u) . unsession
   return ()
-
-newSession :: D.SessionData -> Update AuthState SessionKey
-newSession u = do
-  key <- getRandom
-  setSession key u
-  return key
 
 delSession :: SessionKey -> Update AuthState ()
 delSession key = do
@@ -237,7 +231,7 @@ updateTimeout sid c = do
 --------------------------------------------------------------------------------
 -- Generate Methods
 
-$(mkMethods ''AuthState
+makeAcidic ''AuthState
     [ 'askUsers
     , 'addUser
     , 'getUser
@@ -255,9 +249,8 @@ $(mkMethods ''AuthState
     , 'setSession
     , 'getSession
     , 'getSessions
-    , 'newSession
     , 'delSession
     , 'numSessions
     , 'clearExpiredSessions
     , 'updateTimeout
-    ])
+    ]

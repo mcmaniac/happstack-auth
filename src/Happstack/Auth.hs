@@ -13,7 +13,7 @@
 -- and SHA512 for password encryption. Session safety is ensured by a HTTP
 -- header fingerprint (client ip & user-agent) and a configurable session
 -- timeout.
--- 
+--
 -- To use this module, add the `AuthState' to your state dependencies, for
 -- example:
 --
@@ -31,6 +31,7 @@
 {-# LANGUAGE TemplateHaskell, TypeSynonymInstances, MultiParamTypeClasses,
              FlexibleContexts, FlexibleInstances, TupleSections, CPP
              #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Happstack.Auth
     (
@@ -87,7 +88,7 @@ module Happstack.Auth
     , SessionKey
     , Minutes
     , AuthState
-    , authProxy
+    -- , authProxy
     ) where
 
 
@@ -95,15 +96,19 @@ import Control.Applicative
 import Control.Monad.Reader
 import Data.Maybe
 import System.Time
+import System.Random
 
 import qualified Data.ByteString.Char8 as BS8
+import qualified Data.Map              as M
+import qualified Data.IxSet            as Ix
 
 import Data.Convertible
 import Happstack.Server
 
 import Happstack.Server.Internal.Cookie
 
-import Happstack.State
+import Data.Acid hiding (update, query)
+import qualified Data.Acid as Acid
 
 import Happstack.Auth.Internal
 import Happstack.Auth.Internal.Data hiding (Username, User, SessionData)
@@ -187,9 +192,25 @@ instance Convertible SessionData D.SessionData where
 -- Auth Proxy
 --
 
-authProxy :: Proxy AuthState
-authProxy = Proxy
+-- authProxy :: Proxy AuthState
+-- authProxy = Proxy
 
+emptyState :: D.AuthState
+emptyState = D.AuthState
+  { sessions = D.Sessions (M.empty)
+  , users    = Ix.empty
+  , nextUid  = 0
+  }
+
+update :: (UpdateEvent event, EventState event ~ AuthState, MonadIO m) => event -> m (EventResult event)
+update event = liftIO $ do
+  acid <- openLocalState emptyState
+  Acid.update acid event
+
+query :: (QueryEvent event, EventState event ~ AuthState, MonadIO m) => event -> m (EventResult event)
+query event = liftIO $ do
+  acid <- openLocalState emptyState
+  Acid.query acid event
 
 --------------------------------------------------------------------------------
 -- End user functions: Users
@@ -245,7 +266,10 @@ getSession :: (MonadIO m) => SessionKey -> m (Maybe SessionData)
 getSession k = query (GetSession k) >>= return . fmap fromDSession
 
 newSession :: (MonadIO m) => SessionData -> m SessionKey
-newSession d = update $ NewSession (toDSession d)
+newSession d = do
+  key <- liftIO randomIO
+  update $ SetSession key (toDSession d)
+  return key
 
 delSession :: (MonadIO m) => SessionKey -> m ()
 delSession k = update $ DelSession k
@@ -385,7 +409,7 @@ getSessionKey :: (MonadIO m, MonadPlus m, ServerMonad m, WebMonad Response m, Fi
               => m (Maybe SessionKey)
 getSessionKey = withSessionId return
 
-withSessionId :: (Read a, MonadIO m, MonadPlus m, ServerMonad m, WebMonad Response m, FilterMonad Response m, HasRqData m)
+withSessionId :: (Read a, MonadIO m, MonadPlus m, ServerMonad m, WebMonad Response m, FilterMonad Response m, HasRqData m, FromReqURI a)
               => (Maybe a -> m r)
               -> m r
 withSessionId f = do
@@ -393,7 +417,7 @@ withSessionId f = do
     decodeBody queryPolicy
     withDataFn getSessionId f
   where
-    getSessionId :: (Read a) => RqData (Maybe a)
+    getSessionId :: (Read a, FromReqURI a) => RqData (Maybe a)
     getSessionId = optional $ readCookieValue sessionCookie
 
 

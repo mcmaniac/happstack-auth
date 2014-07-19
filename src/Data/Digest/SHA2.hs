@@ -6,7 +6,7 @@
 -- Module      :  Data.Digest.SHA2
 -- Copyright   :  (c) Russell O'Connor 2006
 -- License     :  BSD-style (see the file CryptoReadMe.tex)
--- 
+--
 -- Implements SHA-256, SHA-384, SHA-512, and SHA-224 as defined in FIPS 180-2
 -- <http://csrc.nist.gov/publications/fips/fips180-2/fips180-2withchangenotice.pdf>.
 --
@@ -30,7 +30,7 @@ import Numeric
 ch x y z = (x .&. y) `xor` (complement x .&. z)
 maj x y z = (x .&. y) `xor` (x .&. z) `xor` (y .&. z)
 
-class (Bits w) => ShaData w where
+class (FiniteBits w) => ShaData w where
   bigSigma0 :: w -> w
   bigSigma1 :: w -> w
   smallSigma0 :: w -> w
@@ -42,7 +42,7 @@ instance ShaData Word32 where
  bigSigma1 x = rotateR x 6 `xor` rotateR x 11 `xor` rotateR x 25
  smallSigma0 x = rotateR x 7 `xor` rotateR x 18 `xor` shiftR x 3
  smallSigma1 x = rotateR x 17 `xor` rotateR x 19 `xor` shiftR x 10
- ks = 
+ ks =
    [0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5
    ,0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174
    ,0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da
@@ -57,7 +57,7 @@ instance ShaData Word64 where
  bigSigma1 x = rotateR x 14 `xor` rotateR x 18 `xor` rotateR x 41
  smallSigma0 x = rotateR x 1 `xor` rotateR x 8 `xor` shiftR x 7
  smallSigma1 x = rotateR x 19 `xor` rotateR x 61 `xor` shiftR x 6
- ks = 
+ ks =
    [0x428a2f98d728ae22, 0x7137449123ef65cd, 0xb5c0fbcfec4d3b2f, 0xe9b5dba58189dbbc
    ,0x3956c25bf348b538, 0x59f111f1b605d019, 0x923f82a4af194f9b, 0xab1c5ed5da6d8118
    ,0xd807aa98a3030242, 0x12835b0145706fbe, 0x243185be4ee4b28c, 0x550c7dc3d5ffb4e2
@@ -82,26 +82,26 @@ instance ShaData Word64 where
 blockSize = 16
 
 -----------------------------------------------------------------------------
--- | 'padding' currently requires that the bitSize of @a@ divide the bitSize 
+-- | 'padding' currently requires that the bitSize of @a@ divide the bitSize
 -- of @w@
 -----------------------------------------------------------------------------
-padding :: (ShaData w, Bits a, Integral a) => [a] -> [[w]]
+padding :: (ShaData w, FiniteBits a, Integral a, Num w) => [a] -> [[w]]
 padding x = unfoldr block $ paddingHelper x 0 (0::Int) (0::Integer)
  where
   block [] = Nothing
   block x = Just $ splitAt blockSize x
-  paddingHelper x o on n | on == (bitSize o) = o:paddingHelper x 0 0 n
-  paddingHelper (x:xs) o on n | on < (bitSize o) =
+  paddingHelper x o on n | on == (finiteBitSize o) = o:paddingHelper x 0 0 n
+  paddingHelper (x:xs) o on n | on < (finiteBitSize o) =
     paddingHelper xs ((shiftL o bs) .|. (fromIntegral x)) (on+bs) $! (n+fromIntegral bs)
    where
-    bs = bitSize x
+    bs = finiteBitSize x
   paddingHelper [] o on n = (shiftL (shiftL o 1 .|. 1) (bso-on-1)):
                             (zeros ((-(fromIntegral n-on+3*bso)) `mod` (blockSize*bso)))
                             [fromIntegral (shiftR n bso), fromIntegral n]
    where
-    bso = bitSize o
+    bso = finiteBitSize o
     zeros 0 = id
-    zeros n | 0 < n = let z=0 in (z:) . (zeros (n-bitSize z))
+    zeros n | 0 < n = let z=0 in (z:) . (zeros (n-finiteBitSize z))
 
 data Hash8 w = Hash8 !w !w !w !w !w !w !w !w deriving (Eq, Ord)
 
@@ -111,7 +111,7 @@ type Hash512 = Hash8 Word64
 data Hash384 = Hash384 !Word64 !Word64 !Word64 !Word64 !Word64 !Word64 deriving (Eq, Ord)
 data Hash224 = Hash224 !Word32 !Word32 !Word32 !Word32 !Word32 !Word32 !Word32 deriving (Eq, Ord)
 
-instance (Integral a) => Show (Hash8 a) where
+instance (Integral a, Show a) => Show (Hash8 a) where
  showsPrec _ (Hash8 a b c d e f g h) =
   (showHex a) . (' ':) .
   (showHex b) . (' ':) .
@@ -144,14 +144,14 @@ instance Show Hash224 where
 class (Eq h, Ord h, Show h) => Hash h where
   toOctets :: h -> [Word8]
 
-bitsToOctets x = helper (bitSize x) x []
+bitsToOctets x = helper (finiteBitSize x) x []
    where
     helper s x r | s <= 0 = r
                  | otherwise = helper (s-bs) (shiftR x bs) ((fromIntegral x):r)
      where
-      bs = bitSize (head r)
+      bs = finiteBitSize (head r)
 
-instance (Integral h, Bits h) => Hash (Hash8 h) where
+instance (Integral h, FiniteBits h, Show h) => Hash (Hash8 h) where
   toOctets (Hash8 x0 x1 x2 x3 x4 x5 x6 x7) = bitsToOctets =<< [x0, x1, x2, x3, x4, x5, x6, x7]
 
 instance Hash Hash384 where
@@ -160,7 +160,7 @@ instance Hash Hash384 where
 instance Hash Hash224 where
   toOctets (Hash224 x0 x1 x2 x3 x4 x5 x6) = bitsToOctets =<< [x0, x1, x2, x3, x4, x5, x6]
 
-shaStep :: (ShaData w) => Hash8 w -> [w] -> Hash8 w
+shaStep :: (Num w, ShaData w) => Hash8 w -> [w] -> Hash8 w
 shaStep h m = (foldl' (flip id) h (zipWith mkStep3 ks ws)) `plus` h
  where
   ws = m++zipWith4 smallSigma (drop (blockSize-2) ws) (drop (blockSize-7) ws)
@@ -179,7 +179,7 @@ shaStep h m = (foldl' (flip id) h (zipWith mkStep3 ks ws)) `plus` h
 -- bitSize of @a@ divide the bitSize of @w@
 -----------------------------------------------------------------------------
 
-sha :: (ShaData w, Bits a, Integral a) => Hash8 w -> [a] -> Hash8 w
+sha :: (ShaData w, FiniteBits a, Integral a, Num w) => Hash8 w -> [a] -> Hash8 w
 sha h0 x = foldl' shaStep h0 $ padding x
 
 {-
@@ -209,7 +209,7 @@ sha384 x = Hash384 x0 x1 x2 x3 x4 x5
 -----------------------------------------------------------------------------
 -- | 'sha384' currently requires that the bitSize of @a@ divide 64
 -----------------------------------------------------------------------------
-sha512 :: (Bits a, Integral a) => [a] -> Hash512
+sha512 :: (FiniteBits a, Integral a) => [a] -> Hash512
 sha512 = sha $
   Hash8 0x6a09e667f3bcc908 0xbb67ae8584caa73b 0x3c6ef372fe94f82b 0xa54ff53a5f1d36f1
         0x510e527fade682d1 0x9b05688c2b3e6c1f 0x1f83d9abfb41bd6b 0x5be0cd19137e2179
@@ -227,7 +227,7 @@ sha224 x = Hash224 x0 x1 x2 x3 x4 x5 x6
 
 -----------------------------------------------------------------------------
 -- ** Hashing Strings
--- | @shaXXXAscii@ assumes that all characters of the strings are 
+-- | @shaXXXAscii@ assumes that all characters of the strings are
 -- ISO-latin-1 characters.  ie. each characters fits in one octet.
 -----------------------------------------------------------------------------
 sha256Ascii :: String -> Hash256
@@ -285,7 +285,7 @@ test_sha384 = "SHA-384" ~: test
                Hash384 0x9d0e1809716474cb 0x086e834e310a4a1c 0xed149e9c00f24852 0x7972cec5704c2a5b
                        0x07b8b3dc38ecc4eb 0xae97ddd87f3d8985]
 
-test_sha224 = "SHA-224" ~: test 
+test_sha224 = "SHA-224" ~: test
               [sha224Ascii "abc" ~?=
                Hash224 0x23097d22 0x3405d822 0x8642a477 0xbda255b3 0x2aadbce4 0xbda0b3f7 0xe36c9da7
               ,sha224Ascii "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq" ~?=

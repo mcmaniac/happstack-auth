@@ -5,11 +5,9 @@
 module Happstack.Auth.Internal.Data.Username where
 
 import Data.Data
-import Happstack.Data
+import Data.SafeCopy
 
 newtype Username = Username { unUser :: String }
   deriving (Read,Show,Ord,Eq,Typeable,Data)
 
-$(deriveSerialize ''Username)
-
-instance Version Username
+deriveSafeCopy 1 'base ''Username

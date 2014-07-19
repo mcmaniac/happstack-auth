@@ -5,12 +5,10 @@
 module Happstack.Auth.Internal.Data.SaltedHash where
 
 import Data.Data
-import Happstack.Data
+import Data.SafeCopy
 import Codec.Utils
 
 newtype SaltedHash = SaltedHash [Octet]
   deriving (Read,Show,Ord,Eq,Typeable,Data)
 
-$(deriveSerialize ''SaltedHash)
-
-instance Version SaltedHash
+deriveSafeCopy 1 'base ''SaltedHash

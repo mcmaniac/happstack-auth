@@ -4,12 +4,8 @@
 
 module Happstack.Auth.Internal.Data.AuthState where
 
-import Data.Data
-import Happstack.Data
-import Happstack.Data.IxSet
-import Happstack.State
-
-import qualified Data.Map as M
+import Data.Typeable
+import Data.SafeCopy
 
 import Happstack.Auth.Internal.Data.SessionData
 import Happstack.Auth.Internal.Data.Sessions
@@ -22,12 +18,6 @@ data AuthState = AuthState
     , users         :: UserDB
     , nextUid       :: UserId
     }
-  deriving (Show,Typeable,Data)
+  deriving (Show, Typeable)
 
-instance Version AuthState
-
-$(deriveSerialize ''AuthState)
-
-instance Component AuthState where
-  type Dependencies AuthState = End
-  initialValue = AuthState (Sessions M.empty) empty 0
+deriveSafeCopy 1 'base ''AuthState

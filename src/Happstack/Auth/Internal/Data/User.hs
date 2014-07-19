@@ -6,8 +6,8 @@
 module Happstack.Auth.Internal.Data.User where
 
 import Data.Data
-import Happstack.Data
-import Happstack.Data.IxSet
+import Data.SafeCopy
+import Data.IxSet
 
 import Happstack.Auth.Internal.Data.SaltedHash
 import Happstack.Auth.Internal.Data.UserId
@@ -20,8 +20,6 @@ data User = User
     }
   deriving (Read,Show,Ord,Eq,Typeable,Data)
 
-$(deriveSerialize ''User)
+deriveSafeCopy 1 'base ''User
 
-instance Version User
-
-$(inferIxSet "UserDB" ''User 'noCalcs [''UserId, ''Username])
+inferIxSet "UserDB" ''User 'noCalcs [''UserId, ''Username]
