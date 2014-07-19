@@ -35,7 +35,8 @@ Library
         acid-state,
         ixset,
         safecopy,
-        convertible
+        convertible,
+        Crypto
 
     Exposed-Modules:
         Happstack.Auth
@@ -45,8 +46,6 @@ Library
     Other-Modules:
 
         Codec.Utils
-        Data.Digest.SHA2
-        Data.Digest.SHA512
 
         Happstack.Auth.Internal.Data.AuthState
         Happstack.Auth.Internal.Data.SaltedHash
