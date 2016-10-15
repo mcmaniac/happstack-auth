@@ -5,3 +5,5 @@ Main
 _local
 dist
 .hs_tags
+.cabal-sandbox/
+cabal.sandbox.config
