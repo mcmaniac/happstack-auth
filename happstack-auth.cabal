@@ -29,7 +29,6 @@ Library
         containers,
         random,
         old-time,
-        happstack,
         happstack-server,
         acid-state,
         ixset,
