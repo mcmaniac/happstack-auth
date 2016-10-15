@@ -423,7 +423,7 @@ withSessionId f = do
 
 -- | Run a `ServerPartT' with the `SessionData' of the currently logged in user
 -- (if available)
-withSession :: (MonadIO m)
+withSession :: (MonadIO m, MonadPlus m)
             => (SessionData -> ServerPartT m a)     -- ^ Logged in response
             -> ServerPartT m a                      -- ^ Not logged in response
             -> ServerPartT m a
@@ -435,7 +435,7 @@ withSession f guestSPT = withSessionId action
 
 
 -- | Require a login
-loginGate :: (MonadIO m)
+loginGate :: (MonadIO m, MonadPlus m)
           => ServerPartT m a    -- ^ Logged in
           -> ServerPartT m a    -- ^ Not registered
           -> ServerPartT m a
