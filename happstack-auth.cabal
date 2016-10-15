@@ -3,14 +3,13 @@ Version:             0.2.1.2
 License:             BSD3
 License-File:        LICENSE
 Author:              Nils Schweinsberg
-Maintainer:          mail@n-sch.de
+Maintainer:          mail@nils.cc
 Category:            Web
 
 Synopsis:            A Happstack Authentication Suite
 Description:         An easy way to to implement user authentication for
                      Happstack web applications.
 
-Homepage:            http://n-sch.de/happstack-auth
 Build-Type:          Simple
 Cabal-Version:       >= 1.8
 
